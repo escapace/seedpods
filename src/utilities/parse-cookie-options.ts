@@ -1,13 +1,9 @@
 import z from 'zod'
 import { toIMF } from './to-imf'
 import sodium from 'sodium-native'
-import { JSONType } from '../types'
-import { isFunction } from 'lodash-es'
 
 // eslint-disable-next-line no-useless-escape
 const FIELD_CONTENT_REGEXP = /^(?=[\x20-\x7E]*$)[^()@<>,;:\\"\[\]?={}\s]+$/
-
-const reducer = (_: JSONType | undefined, next: JSONType | undefined) => next
 
 const baseOptionsSchema = z.object({
   key: z
@@ -71,12 +67,7 @@ const baseOptionsSchema = z.object({
   secure: z.boolean().optional(),
   httpOnly: z.boolean().optional(),
   sameSite: z.enum(['Strict', 'Lax', 'None']).optional(),
-  prefix: z.literal('__Secure-').or(z.literal('__Host-')).optional(),
-  reducer: z
-    .any()
-    .optional()
-    .refine((value) => value === undefined || isFunction(value))
-    .transform((value) => (isFunction(value) ? value : reducer))
+  prefix: z.literal('__Secure-').or(z.literal('__Host-')).optional()
 })
 
 const cookieOptionsSchema = z
@@ -145,42 +136,29 @@ export type ZodInputCookieOptionsSchema = z.input<CookieOptionsSchema>
 export type ZodOutputCookieOptionsSchema = z.output<CookieOptionsSchema>
 export type CookieType = ZodInputCookieOptionsSchema['type']
 
-export type CookieReducer<
-  T extends JSONType,
-  U extends Exclude<T, undefined> = Exclude<T, undefined>
-> = (prev?: T | undefined, next?: T | undefined) => U | undefined
-
-export type CookieOptions<
-  KEY extends string,
-  TYPE extends CookieType,
-  VALUE extends JSONType = JSONType
-> = Omit<ZodInputCookieOptionsSchema, 'key' | 'type' | 'reducer'> & {
+export type CookieOptions<KEY extends string, TYPE extends CookieType> = Omit<
+  ZodInputCookieOptionsSchema,
+  'key' | 'type'
+> & {
   key: KEY
   type: TYPE
-  reducer?: CookieReducer<VALUE>
 }
 
 export type CookieOptionsParsed<
   KEY extends string,
-  TYPE extends CookieType,
-  VALUE extends JSONType = JSONType
-> = Omit<ZodOutputCookieOptionsSchema, 'key' | 'type' | 'reducer'> & {
+  TYPE extends CookieType
+> = Omit<ZodOutputCookieOptionsSchema, 'key' | 'type'> & {
   key: KEY
   type: TYPE
-  reducer: CookieReducer<VALUE>
 }
 
-export const parseCookieOptions = <
-  KEY extends string,
-  TYPE extends CookieType,
-  VALUE extends JSONType = JSONType
->(
-  value: CookieOptions<KEY, TYPE, VALUE>
-): CookieOptionsParsed<KEY, TYPE, VALUE> => {
+export const parseCookieOptions = <KEY extends string, TYPE extends CookieType>(
+  value: CookieOptions<KEY, TYPE>
+): CookieOptionsParsed<KEY, TYPE> => {
   const result = cookieOptionsSchema.safeParse(value)
 
   if (result.success) {
-    return result.data as CookieOptionsParsed<KEY, TYPE, VALUE>
+    return result.data as CookieOptionsParsed<KEY, TYPE>
   }
 
   const err = result.error

@@ -60,24 +60,19 @@ export type CookieState =
 
 export interface Cookie<
   KEY extends string = any,
-  TYPE extends CookieType = any,
-  VALUE extends JSONType = any
+  TYPE extends CookieType = any
 > {
   readonly [SYMBOL_COOKIE]: {
     name: string
     fromString: (value: string | undefined) => CookieState
     toString: (value: CookieState) => string | undefined
-    readonly options: CookieOptionsParsed<KEY, TYPE, VALUE>
+    readonly options: CookieOptionsParsed<KEY, TYPE>
   }
 }
 
-export const cookie = <
-  KEY extends string,
-  TYPE extends CookieType,
-  VALUE extends JSONType = JSONType
->(
-  options: CookieOptions<KEY, TYPE, VALUE>
-): Cookie<KEY, TYPE, VALUE> => {
+export const cookie = <KEY extends string, TYPE extends CookieType>(
+  options: CookieOptions<KEY, TYPE>
+): Cookie<KEY, TYPE> => {
   const cookie = parseCookieOptions(options)
   const suffixArray: string[] = []
   const expireSuffixArray: string[] = []
@@ -191,7 +186,7 @@ export const cookie = <
 
 export function isCookie(
   cookie: unknown
-): asserts cookie is Cookie<string, CookieType, JSONType> {
+): asserts cookie is Cookie<string, CookieType> {
   if (
     !(
       isPlainObject(cookie) &&

@@ -26,13 +26,10 @@ const tycho = cookie({
   type: 'secretbox',
   domain: 'example.com',
   keys: [keyB, keyA],
-  path: '/tycho',
-  reducer(prev?: string[], next?: string[]) {
-    return [...(prev ?? []), ...(next ?? [])]
-  }
+  path: '/tycho'
 })
 
-const dazzle = cookie<'dazzle', 'hmac', number>({
+const dazzle = cookie<'dazzle', 'hmac'>({
   key: 'dazzle',
   type: 'hmac',
   httpOnly: true,
@@ -93,22 +90,25 @@ describe('take', () => {
   })
 
   it('.', () => {
-    const { get, set, del, toStrings } = take(
-      `__Secure-vixen=${
-        toSecretbox(
-          Buffer.from(JSON.stringify({ change: 'triangle', author: 'escape' })),
-          [keyC]
-        ) as string
-      }; tycho=${
-        toSecretbox(
-          Buffer.from(JSON.stringify(['threw', 'satellites', 'class'])),
-          [keyB, keyA]
-        ) as string
-      }; __Host-ball=${Buffer.from('ride problem cause market').toString(
-        'base64url'
-      )}; abc=qwe`,
-      cookieJar
-    )
+    const cookieHeader = `__Secure-vixen=${
+      toSecretbox(
+        Buffer.from(JSON.stringify({ change: 'triangle', author: 'escape' })),
+        [keyC]
+      ) as string
+    }; tycho=${
+      toSecretbox(
+        Buffer.from(JSON.stringify(['threw', 'satellites', 'class'])),
+        [keyB, keyA]
+      ) as string
+    }; __Host-ball=${Buffer.from('ride problem cause market').toString(
+      'base64url'
+    )}; abc=qwe`
+
+    const { get, set, del, toStrings } = take(cookieHeader, cookieJar, {
+      tycho(prev: string[], next: string[]): string[] | undefined {
+        return [...(prev ?? []), ...(next ?? [])]
+      }
+    })
 
     assert.equal(toStrings().length, 2)
 

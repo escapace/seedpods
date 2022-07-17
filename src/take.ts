@@ -1,26 +1,35 @@
-import { first, isEqual, last, map } from 'lodash-es'
+import { first, isEqual, isFunction, last, map } from 'lodash-es'
 import { IncomingHttpHeaders as HTTPIncomingHttpHeaders } from 'node:http'
 import { IncomingHttpHeaders as HTTP2IncomingHttpHeaders } from 'node:http2'
 import { CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
-import { JAR, SYMBOL_JAR, Value } from './jar'
+import { JAR, SYMBOL_JAR } from './jar'
 
 import { JSONType } from './types'
 import { parseCookieHeader } from './utilities/parse-cookie-header'
-import { CookieReducer } from './utilities/parse-cookie-options'
 
 type CookieHeader =
   | HTTPIncomingHttpHeaders['cookie']
   | HTTP2IncomingHttpHeaders['cookie']
 
-interface Take<T extends JAR> {
-  get: <U extends keyof T[typeof SYMBOL_JAR]['state']['cookies']>(
-    key: U
-  ) => undefined | Value<T[typeof SYMBOL_JAR], U>
-  set: <U extends keyof T[typeof SYMBOL_JAR]['state']['cookies']>(
-    key: U,
-    value: Value<T[typeof SYMBOL_JAR], U> | undefined
-  ) => void
-  del: (key: keyof T[typeof SYMBOL_JAR]['state']['cookies']) => void
+// export type Reducer= <T extends JSONType = JSONType>(
+//   prev?: T,
+//   next?: T
+// ) => T | undefined
+
+type Names<T extends JAR> = keyof T[typeof SYMBOL_JAR]['state']['cookies']
+type Reducers<T extends JAR> = Partial<Record<Names<T>, Function | undefined>>
+
+type Value<
+  Jar extends JAR,
+  Name extends Names<Jar>,
+  C extends Reducers<Jar>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+> = C[Name] extends (...args: any) => infer R ? R : JSONType
+
+interface Take<T extends JAR, R extends Reducers<T>> {
+  get: <U extends Names<T>>(key: U) => undefined | Value<T, U, R>
+  set: <U extends Names<T>>(key: U, value: Value<T, U, R> | undefined) => void
+  del: (key: Names<T>) => void
   toStrings: () => string[]
 }
 
@@ -30,12 +39,18 @@ const cookieValue = (state: CookieState): JSONType | undefined =>
     ? state.value
     : undefined
 
-export const take = <T extends JAR>(
+export const take = <
+  T extends JAR,
+  U extends {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [P in Names<T>]?: (prev?: any, next?: any) => JSONType | undefined
+  }
+>(
   cookieHeader: CookieHeader,
-  jar: T
-): Take<T> => {
-  // isJar(jar)
-
+  jar: T,
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  reducers: U = {} as U
+): Take<T, U> => {
   const cookies = jar[SYMBOL_JAR].state.cookies
   const parsedCookieHeader = parseCookieHeader(cookieHeader)
 
@@ -104,10 +119,11 @@ export const take = <T extends JAR>(
     const lastCookieState = last(cookieStates) as CookieState
     const previousValue = cookieValue(lastCookieState)
 
-    const reducer = cookies[key][SYMBOL_COOKIE].options
-      .reducer as CookieReducer<JSONType>
+    const reducer = reducers[key]
 
-    const nextValue = reducer(previousValue, value)
+    const nextValue = isFunction(reducer)
+      ? reducer(previousValue, value)
+      : value
 
     if (nextValue === undefined) {
       return del(key)
@@ -162,5 +178,5 @@ export const take = <T extends JAR>(
 
   const asd = { get, set, del, toStrings }
 
-  return asd as Take<T>
+  return asd as Take<T, U>
 }
