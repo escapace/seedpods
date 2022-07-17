@@ -21,10 +21,12 @@ type Reducers<T extends JAR> = {
 }
 
 interface Take<T extends JAR> {
+  [Symbol.iterator]: () => IterableIterator<[Keys<T>, string]>
   get: <U extends Keys<T>>(key: U) => undefined | Value<T, U>
   set: <U extends Keys<T>>(key: U, value: Value<T, U> | undefined) => void
   del: (key: Keys<T>) => void
-  toStrings: () => string[]
+  entries: () => IterableIterator<[Keys<T>, string]>
+  values: () => IterableIterator<string>
 }
 
 const cookieValue = (state: CookieState): JSONType | undefined =>
@@ -104,12 +106,12 @@ export const take = <T extends JAR>(
     }
 
     const lastCookieState = last(cookieStates) as CookieState
-    const previousValue = cookieValue(lastCookieState) as Value<T, string>
+    const lastCookieValue = cookieValue(lastCookieState) as Value<T, string>
 
     const reducer = reducers[key]
 
     const nextValue = isFunction(reducer)
-      ? reducer(previousValue, value)
+      ? reducer(lastCookieValue, value)
       : value
 
     if (nextValue === undefined) {
@@ -122,10 +124,8 @@ export const take = <T extends JAR>(
     ])
   }
 
-  const toStrings = () => {
-    const strings: string[] = []
-
-    state.forEach((cookieStates, key) => {
+  function* entries() {
+    for (const [key, cookieStates] of state) {
       const cookie = cookies[key][SYMBOL_COOKIE]
 
       const firstCookieState = first(cookieStates) as CookieState
@@ -142,22 +142,33 @@ export const take = <T extends JAR>(
           const value = cookie.toString(lastCookieState)
 
           if (value !== undefined) {
-            strings.push(value)
+            yield [key, value] as const
           }
         }
       } else {
         const value = cookie.toString(lastCookieState)
 
         if (value !== undefined) {
-          strings.push(value)
+          yield [key, value] as const
         }
       }
-    })
-
-    return strings
+    }
   }
 
-  const asd = { get, set, del, toStrings }
+  function* values() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const [_, value] of entries()) {
+      yield value
+    }
+  }
 
-  return asd as Take<T>
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return {
+    get,
+    set,
+    del,
+    entries,
+    [Symbol.iterator]: entries,
+    values
+  } as Take<T>
 }
