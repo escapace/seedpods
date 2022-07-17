@@ -123,27 +123,21 @@ export const take = <T extends JAR>(
   }
 
   const toStrings = () => {
-    // const cookieStates = state.get(key)
-    // const firstValue = cookieValue(first(cookieStates) as CookieState)
-    // const lastValue = cookieValue(last(cookieStates) as CookieState)
-    //
-    // if (!isEqual(firstValue, nextValue)) {
-    //   state.set(key, [
-    //     ...cookieStates,
-    //     { type: TypeCookieState.Set, value: nextValue }
-    //   ])
-    // }
-
     const strings: string[] = []
 
     state.forEach((cookieStates, key) => {
       const cookie = cookies[key][SYMBOL_COOKIE]
+
+      const firstCookieState = first(cookieStates) as CookieState
+      const firstCookieValue = cookieValue(firstCookieState)
+
       const lastCookieState = last(cookieStates) as CookieState
       const lastCookieValue = cookieValue(lastCookieState)
 
-      if (lastCookieState.type === TypeCookieState.Set) {
-        const firstCookieValue = cookieValue(first(cookieStates) as CookieState)
-
+      if (
+        firstCookieState.type === TypeCookieState.Set &&
+        lastCookieState.type === TypeCookieState.Set
+      ) {
         if (!isEqual(firstCookieValue, lastCookieValue)) {
           const value = cookie.toString(lastCookieState)
 

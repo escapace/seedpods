@@ -110,6 +110,7 @@ describe('take', () => {
       }
     })
 
+    console.log(toStrings())
     assert.equal(toStrings().length, 2)
 
     assert.ok(toStrings().some((value) => value.startsWith('__Secure-vixen=')))
