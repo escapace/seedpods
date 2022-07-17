@@ -2,7 +2,8 @@
 
 import $ from '@escapace/typelevel'
 import { isPlainObject } from 'lodash-es'
-import { Cookie, isCookie, SYMBOL_COOKIE } from './cookie'
+import { Cookie, isCookie, SYMBOL_COOKIE, Key } from './cookie'
+import { JSONType } from './types'
 
 export const SYMBOL_JAR = Symbol.for('SEEDPODS-JAR')
 
@@ -61,13 +62,24 @@ export type Next<
   $.If<$.Is.Never<U>, T, Model<$.Cons<U, T['log']>, Reducer<T['state'], U>>>
 >
 
-// export type Cast<T extends JarSymbols> = T extends JarSymbols<
+export type Keys<T extends JAR> = keyof T[typeof SYMBOL_JAR]['state']['cookies']
+
+export type Value<
+  T extends JAR,
+  U extends Keys<T>
+> = T[typeof SYMBOL_JAR]['state']['cookies'][U] extends Cookie<
+  any,
+  any,
+  infer VALUE
+>
+  ? VALUE
+  : JSONType
+
+// export type Cast<T extends JarSymbolsk = T extends JarSymbols<
 //   Model<infer A, infer B>
 // >
 //   ? Model<A, B>
 //   : never
-
-export type Key<T> = T extends Cookie<infer KEY> ? KEY : never
 
 export interface JAR<T extends Model = Model> {
   [SYMBOL_JAR]: T

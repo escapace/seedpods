@@ -21,7 +21,7 @@ const vixen = cookie({
   keys: [keyA, keyC]
 })
 
-const tycho = cookie({
+const tycho = cookie<'tycho', 'secretbox', string[]>({
   key: 'tycho',
   type: 'secretbox',
   domain: 'example.com',
@@ -29,7 +29,7 @@ const tycho = cookie({
   path: '/tycho'
 })
 
-const dazzle = cookie<'dazzle', 'hmac'>({
+const dazzle = cookie<'dazzle', 'hmac', number>({
   key: 'dazzle',
   type: 'hmac',
   httpOnly: true,
@@ -105,7 +105,7 @@ describe('take', () => {
     )}; abc=qwe`
 
     const { get, set, del, toStrings } = take(cookieHeader, cookieJar, {
-      tycho(prev: string[], next: string[]): string[] | undefined {
+      tycho(prev?: string[], next?: string[]): string[] {
         return [...(prev ?? []), ...(next ?? [])]
       }
     })
