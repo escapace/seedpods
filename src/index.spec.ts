@@ -86,7 +86,14 @@ describe('jar', () => {
 describe('take', () => {
   it('.', () => {
     assert.isFunction(take)
-    assert.hasAllKeys(take('', cookieJar), ['del', 'get', 'set', 'toStrings'])
+    assert.hasAllKeys(take('', cookieJar), [
+      'del',
+      'get',
+      'set',
+      'values',
+      'entries',
+      Symbol.iterator
+    ])
   })
 
   it('.', () => {
@@ -104,49 +111,61 @@ describe('take', () => {
       'base64url'
     )}; abc=qwe`
 
-    const { get, set, del, toStrings } = take(cookieHeader, cookieJar, {
+    const t = take(cookieHeader, cookieJar, {
       tycho(prev?: string[], next?: string[]): string[] {
         return [...(prev ?? []), ...(next ?? [])]
       }
     })
 
-    assert.equal(toStrings().length, 2)
-
-    assert.ok(toStrings().some((value) => value.startsWith('__Secure-vixen=')))
+    assert.equal(Array.from(t.values()).length, 2)
 
     assert.ok(
-      toStrings().some((value) =>
+      Array.from(t.values()).some((value) =>
+        value.startsWith('__Secure-vixen=')
+      )
+    )
+
+    assert.ok(
+      Array.from(t.values()).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
 
-    assert.deepEqual(get('vixen'), { change: 'triangle', author: 'escape' })
-    assert.deepEqual(get('tycho'), ['threw', 'satellites', 'class'])
-    assert.deepEqual(get('dazzle'), undefined)
-    assert.deepEqual(get('ball'), undefined)
+    assert.deepEqual(t.get('vixen'), { change: 'triangle', author: 'escape' })
+    assert.deepEqual(t.get('tycho'), ['threw', 'satellites', 'class'])
+    assert.deepEqual(t.get('dazzle'), undefined)
+    assert.deepEqual(t.get('ball'), undefined)
 
-    set('vixen', { change: 'triangle', author: 'escape', sweet: 'silent' })
-    set('tycho', ['every'])
-    set('tycho', ['plain'])
-    set('dazzle', 100)
+    t.set('vixen', { change: 'triangle', author: 'escape', sweet: 'silent' })
+    t.set('tycho', ['every'])
+    t.set('tycho', ['plain'])
+    t.set('dazzle', 100)
 
-    assert.equal(toStrings().length, 4)
-    assert.ok(toStrings().some((value) => value.startsWith('__Secure-vixen=')))
-    assert.ok(toStrings().some((value) => value.startsWith('tycho=')))
-    assert.ok(toStrings().some((value) => value.startsWith('dazzle=')))
+    assert.equal(Array.from(t.values()).length, 4)
     assert.ok(
-      toStrings().some((value) =>
+      Array.from(t.values()).some((value) =>
+        value.startsWith('__Secure-vixen=')
+      )
+    )
+    assert.ok(
+      Array.from(t.values()).some((value) => value.startsWith('tycho='))
+    )
+    assert.ok(
+      Array.from(t.values()).some((value) => value.startsWith('dazzle='))
+    )
+    assert.ok(
+      Array.from(t.values()).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
 
-    assert.deepEqual(get('vixen'), {
+    assert.deepEqual(t.get('vixen'), {
       change: 'triangle',
       author: 'escape',
       sweet: 'silent'
     })
 
-    assert.deepEqual(get('tycho'), [
+    assert.deepEqual(t.get('tycho'), [
       'threw',
       'satellites',
       'class',
@@ -154,41 +173,40 @@ describe('take', () => {
       'plain'
     ])
 
-    assert.deepEqual(get('dazzle'), 100)
-    assert.deepEqual(get('ball'), undefined)
+    assert.deepEqual(t.get('dazzle'), 100)
+    assert.deepEqual(t.get('ball'), undefined)
 
-    set('vixen', undefined)
-    del('tycho')
-    del('dazzle')
-    del('ball')
+    t.set('vixen', undefined)
+    t.del('tycho')
+    t.del('dazzle')
+    t.del('ball')
 
-    assert.equal(toStrings().length, 3)
+    assert.equal(Array.from(t.values()).length, 3)
     assert.ok(
-      toStrings().some((value) => value.startsWith('__Secure-vixen=; Expires='))
+      Array.from(t.values()).some((value) =>
+        value.startsWith('__Secure-vixen=; Expires=')
+      )
     )
     assert.ok(
-      toStrings().some((value) =>
+      Array.from(t.values()).some((value) =>
         value.startsWith('tycho=; Domain=example.com; Path=/tycho; Expires=')
       )
     )
     assert.ok(
-      toStrings().some((value) =>
-        value.startsWith('__Host-ball=; Path=/; Expires=')
-      )
-    )
-    assert.ok(
-      toStrings().some((value) =>
+      Array.from(t.values()).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
 
-    // @ts-expect-error type
-    assert.throws(() => del('abc'))
+    assert.hasAllKeys(Object.fromEntries(t), ['vixen', 'tycho', 'ball'])
 
     // @ts-expect-error type
-    assert.throws(() => set('abc', 'hello'))
+    assert.throws(() => t.del('abc'))
 
     // @ts-expect-error type
-    assert.throws(() => get('abc'))
+    assert.throws(() => t.set('abc', 'hello'))
+
+    // @ts-expect-error type
+    assert.throws(() => t.get('abc'))
   })
 })
