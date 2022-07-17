@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import z from 'zod'
 import { toIMF } from './to-imf'
 import sodium from 'sodium-native'
+import { JSONType } from '../types'
 
 // eslint-disable-next-line no-useless-escape
 const FIELD_CONTENT_REGEXP = /^(?=[\x20-\x7E]*$)[^()@<>,;:\\"\[\]?={}\s]+$/
@@ -136,29 +138,35 @@ export type ZodInputCookieOptionsSchema = z.input<CookieOptionsSchema>
 export type ZodOutputCookieOptionsSchema = z.output<CookieOptionsSchema>
 export type CookieType = ZodInputCookieOptionsSchema['type']
 
-export type CookieOptions<KEY extends string, TYPE extends CookieType> = Omit<
-  ZodInputCookieOptionsSchema,
-  'key' | 'type'
-> & {
+export type CookieOptions<
+  KEY extends string,
+  TYPE extends CookieType,
+  _VALUE extends JSONType
+> = Omit<ZodInputCookieOptionsSchema, 'key' | 'type'> & {
   key: KEY
   type: TYPE
 }
 
 export type CookieOptionsParsed<
   KEY extends string,
-  TYPE extends CookieType
+  TYPE extends CookieType,
+  _VALUE extends JSONType
 > = Omit<ZodOutputCookieOptionsSchema, 'key' | 'type'> & {
   key: KEY
   type: TYPE
 }
 
-export const parseCookieOptions = <KEY extends string, TYPE extends CookieType>(
-  value: CookieOptions<KEY, TYPE>
-): CookieOptionsParsed<KEY, TYPE> => {
+export const parseCookieOptions = <
+  KEY extends string,
+  TYPE extends CookieType,
+  _VALUE extends JSONType
+>(
+  value: CookieOptions<KEY, TYPE, _VALUE>
+): CookieOptionsParsed<KEY, TYPE, _VALUE> => {
   const result = cookieOptionsSchema.safeParse(value)
 
   if (result.success) {
-    return result.data as CookieOptionsParsed<KEY, TYPE>
+    return result.data as CookieOptionsParsed<KEY, TYPE, _VALUE>
   }
 
   const err = result.error
