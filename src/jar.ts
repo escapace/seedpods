@@ -73,13 +73,6 @@ export interface JAR<T extends Model = Model> {
   [SYMBOL_JAR]: T
 }
 
-export type Value<
-  T extends Model,
-  U extends keyof T['state']['cookies']
-> = T['state']['cookies'][U] extends Cookie<any, any, infer VALUE>
-  ? VALUE
-  : never
-
 export interface Jar<T extends Model> extends JAR<T> {
   put: <U extends Cookie>(
     cookie: U
