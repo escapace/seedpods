@@ -27,16 +27,20 @@ export const to = function (
   )
 }
 
+export function compare(a: Buffer, b: Buffer) {
+  if (a.length !== b.length) {
+    crypto.timingSafeEqual(a, a)
+    return false
+  }
+
+  return crypto.timingSafeEqual(a, b)
+}
+
 export const from = (cookieValue: string, keys: Buffer[]) => {
   const split = cookieValue.split('.')
   const valueB64 = split[0]
-  // const digestB64 = split[1]
 
   if (split.length !== 2) {
-    // the cookie is malformed
-    // log.debug(
-    //   'fastify-secure-session: the cookie is malformed, creating an empty session'
-    // )
     return undefined
   }
 
@@ -56,9 +60,7 @@ export const from = (cookieValue: string, keys: Buffer[]) => {
 
     const expectedBuffer = Buffer.from(expectedInput)
 
-    const decoded =
-      expectedBuffer.length === inputBuffer.length &&
-      crypto.timingSafeEqual(expectedBuffer, inputBuffer)
+    const decoded = compare(expectedBuffer, inputBuffer)
 
     rotate = decoded && index > 0
 
