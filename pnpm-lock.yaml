@@ -413,11 +413,11 @@ packages:
   /@types/lodash-es/4.17.6:
     resolution: {integrity: sha512-R+zTeVUKDdfoRxpAryaQNRKk3105Rrgx2CFRClIgRGaqDTdjsm8h6IYA8ir584W3ePzkZfst5xIgDwYrlh9HLg==}
     dependencies:
-      '@types/lodash': 4.14.182
+      '@types/lodash': 4.14.184
     dev: true
 
-  /@types/lodash/4.14.182:
-    resolution: {integrity: sha512-/THyiqyQAP9AfARo4pF+aCGcyiQ94tX/Is2I7HofNRqoYLgN1PBoOWu2/zTA5zMxzP5EFutMtWtGAFRKUe961Q==}
+  /@types/lodash/4.14.184:
+    resolution: {integrity: sha512-RoZphVtHbxPZizt4IcILciSWiC6dcn+eZ8oX9IWEYfDMcocdd42f7NPI6fQj+6zI8y4E0L7gu2pcZKLGTRaV9Q==}
     dev: true
 
   /@types/minimist/1.2.2:
@@ -753,8 +753,8 @@ packages:
       dotenv: 16.0.1
       gittar: 0.1.1
       jiti: 1.14.0
-      mlly: 0.5.12
-      pathe: 0.3.4
+      mlly: 0.5.13
+      pathe: 0.3.5
       rc9: 1.2.2
     dev: true
 
@@ -1675,7 +1675,7 @@ packages:
     resolution: {integrity: sha512-dm9s5Pw7Jc0GvMYbshN6zchCA9RgQlzzEZX3vylR9IqFfS8XciblUXOKfW6SiuJ0e13eDYZoZV5wdrev7P3Nwg==}
     engines: {node: ^10.12.0 || >=12.0.0}
     dependencies:
-      flatted: 3.2.6
+      flatted: 3.2.7
       rimraf: 3.0.2
     dev: true
 
@@ -1684,8 +1684,8 @@ packages:
     hasBin: true
     dev: true
 
-  /flatted/3.2.6:
-    resolution: {integrity: sha512-0sQoMh9s0BYsm+12Huy/rkKxVu4R1+r96YX5cG44rHV0pQ6iC3Q+mkoMFaGWObMFYQxCVT+ssG1ksneA2MI9KQ==}
+  /flatted/3.2.7:
+    resolution: {integrity: sha512-5nqDSxl8nn5BSNxyR3n4I6eDmbolI6WT+QqR547RwxQapgjQBmtktdP+HTBb/a/zLsbzERTONyUB5pefh5TtjQ==}
     dev: true
 
   /foreground-child/2.0.0:
@@ -2369,12 +2369,12 @@ packages:
       minimist: 1.2.6
     dev: true
 
-  /mlly/0.5.12:
-    resolution: {integrity: sha512-8moXGh6Hfy2Nmys3DDEm4CuxDBk5Y7Lk1jQ4JcwW0djO9b+SCKTpw0enIQeZIuEnPljdxHSGmcbXU9hpIIEYeQ==}
+  /mlly/0.5.13:
+    resolution: {integrity: sha512-0SK2fqoan+PMjADs4I2egAtrtNtpjqRez6PDTCeAdGjUQNJCvO5o9v2NEq52WA1jFmMU97qBr/JgdvCquehDbA==}
     dependencies:
       acorn: 8.8.0
-      pathe: 0.3.4
-      pkg-types: 0.3.3
+      pathe: 0.3.5
+      pkg-types: 0.3.4
       ufo: 0.8.5
     dev: true
 
@@ -2487,7 +2487,7 @@ packages:
       destr: 1.1.1
       node-fetch-native: 0.1.4
       ufo: 0.8.5
-      undici: 5.8.2
+      undici: 5.9.1
     dev: true
 
   /once/1.4.0:
@@ -2608,8 +2608,8 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /pathe/0.3.4:
-    resolution: {integrity: sha512-YWgqEdxf36R6vcsyj0A+yT/rDRPe0wui4J9gRR7T4whjU5Lx/jZOr75ckEgTNaLVQABAwsrlzHRpIKcCdXAQ5A==}
+  /pathe/0.3.5:
+    resolution: {integrity: sha512-grU/QeYP0ChuE5kjU2/k8VtAeODzbernHlue0gTa27+ayGIu3wqYBIPGfP9r5xSqgCgDd4nWrjKXEfxMillByg==}
     dev: true
 
   /pathval/1.1.1:
@@ -2627,12 +2627,12 @@ packages:
     hasBin: true
     dev: true
 
-  /pkg-types/0.3.3:
-    resolution: {integrity: sha512-6AJcCMnjUQPQv/Wk960w0TOmjhdjbeaQJoSKWRQv9N3rgkessCu6J0Ydsog/nw1MbpnxHuPzYbfOn2KmlZO1FA==}
+  /pkg-types/0.3.4:
+    resolution: {integrity: sha512-s214f/xkRpwlwVBToWq9Mu0XlU3HhZMYCnr2var8+jjbavBHh/VCh4pBLsJW29rJ//B1jb4HlpMIaNIMH+W2/w==}
     dependencies:
       jsonc-parser: 3.1.0
-      mlly: 0.5.12
-      pathe: 0.3.4
+      mlly: 0.5.13
+      pathe: 0.3.5
     dev: true
 
   /prelude-ls/1.2.1:
@@ -3199,8 +3199,8 @@ packages:
     resolution: {integrity: sha512-e4+UtA5IRO+ha6hYklwj6r7BjiGMxS0O+UaSg9HbaTefg4kMkzj4tXzEBajRR+wkxf+golgAWKzLbytCUDMJAA==}
     dev: true
 
-  /undici/5.8.2:
-    resolution: {integrity: sha512-3KLq3pXMS0Y4IELV045fTxqz04Nk9Ms7yfBBHum3yxsTR4XNn+ZCaUbf/mWitgYDAhsplQ0B1G4S5D345lMO3A==}
+  /undici/5.9.1:
+    resolution: {integrity: sha512-6fB3a+SNnWEm4CJbgo0/CWR8RGcOCQP68SF4X0mxtYTq2VNN8T88NYrWVBAeSX+zb7bny2dx2iYhP3XHi00omg==}
     engines: {node: '>=12.18'}
     dev: true
 
