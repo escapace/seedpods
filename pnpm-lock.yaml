@@ -33,7 +33,7 @@ specifiers:
   prettier: 2.7.1
   prettier-config-escapace: 1.0.4
   semver: 7.3.7
-  sodium-native: ^3.4.1
+  sodium-native: ^4.0.1
   syncpack: 8.2.4
   typescript: 4.8.3
   zod: ^3.19.1
@@ -41,7 +41,7 @@ specifiers:
 dependencies:
   '@escapace/typelevel': 1.2.2
   lodash-es: 4.17.21
-  sodium-native: 3.4.1
+  sodium-native: 4.0.1
   zod: 3.20.2
 
 devDependencies:
@@ -3045,8 +3045,8 @@ packages:
       is-fullwidth-code-point: 4.0.0
     dev: true
 
-  /sodium-native/3.4.1:
-    resolution: {integrity: sha512-PaNN/roiFWzVVTL6OqjzYct38NSXewdl2wz8SRB51Br/MLIJPrbM3XexhVWkq7D3UWMysfrhKVf1v1phZq6MeQ==}
+  /sodium-native/4.0.1:
+    resolution: {integrity: sha512-OQTaxrVLtMvrnfcwZVsOTHe58MfDApJiHJNoOwcmmrhwvlYkfaUt2WuzRio8PgEMOd96R5aDHY49DCtock1zsA==}
     requiresBuild: true
     dependencies:
       node-gyp-build: 4.5.0
