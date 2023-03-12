@@ -56,7 +56,7 @@ describe('jar', () => {
 
     assert.hasAllKeys(cookieJar, ['put', SYMBOL_JAR])
 
-    assert.deepEqual(cookieJar[SYMBOL_JAR], {
+    assert.deepStrictEqual(cookieJar[SYMBOL_JAR], {
       state: {
         cookies: {
           vixen,
@@ -66,10 +66,10 @@ describe('jar', () => {
         }
       },
       log: [
-        { type: TypeAction.Cookie, payload: vixen },
-        { type: TypeAction.Cookie, payload: tycho },
+        { type: TypeAction.Cookie, payload: ball },
         { type: TypeAction.Cookie, payload: dazzle },
-        { type: TypeAction.Cookie, payload: ball }
+        { type: TypeAction.Cookie, payload: tycho },
+        { type: TypeAction.Cookie, payload: vixen }
       ]
     })
   })
