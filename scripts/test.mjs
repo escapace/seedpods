@@ -3,7 +3,7 @@ import fastGlob from 'fast-glob'
 import { remove } from 'fs-extra'
 import { mkdir } from 'fs/promises'
 import path from 'path'
-import { cwd, target, external } from './constants.mjs'
+import { cwd, external, target } from './constants.mjs'
 
 const directoryTests = path.join(cwd, 'lib/tests')
 const directorySrc = path.join(cwd, 'src')
@@ -27,7 +27,7 @@ await build({
   format: 'esm',
   logLevel: 'info',
   banner: {
-    js: 'import { subtle } from "crypto"'
+    js: 'import crypto from "crypto"'
   },
   define: {
     __NODE__: JSON.stringify(true)

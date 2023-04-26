@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import z from 'zod'
 import { toIMF } from './to-imf'
-import sodium from 'sodium-native'
 import { JSONType } from '../types'
 
 // eslint-disable-next-line no-useless-escape
@@ -84,12 +83,9 @@ const cookieOptionsSchema = z
               .refine<Buffer>((value: unknown): value is Buffer =>
                 Buffer.isBuffer(value)
               )
-              .refine(
-                (value) => value.length === sodium.crypto_secretbox_KEYBYTES,
-                {
-                  message: `The key length should be strictly equals to ${sodium.crypto_secretbox_KEYBYTES}`
-                }
-              )
+              .refine((value) => value.byteLength === 32, {
+                message: `The key should be strictly 256 bits.`
+              })
           )
           .nonempty()
           .max(5)

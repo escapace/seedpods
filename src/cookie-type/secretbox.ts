@@ -1,94 +1,73 @@
-/*!
- *
- * Adaptation of https://github.com/fastify/fastify-secure-session licensed under
- * the MIT License found in the LICENSE-FASTIFY-SECURE-SESSION file in the root
- * directory of this source tree.
- *
- */
+/* eslint-disable no-labels */
 
-import sodium from 'sodium-native'
+const KEY_LENGTH = 256
 
-export const genNonce = () => {
-  const buffer = Buffer.allocUnsafe(sodium.crypto_secretbox_NONCEBYTES)
-  sodium.randombytes_buf(buffer)
-
-  return buffer
-}
-
-export const to = (buffer: Buffer, keys: Buffer[]): string | undefined => {
+export const to = async (
+  buffer: Buffer,
+  keys: Buffer[]
+): Promise<string | undefined> => {
   if (buffer.length === 0) {
     return undefined
   }
 
-  const nonce = genNonce()
+  const key = await crypto.subtle.importKey('raw', keys[0], 'AES-GCM', false, [
+    'encrypt',
+    'decrypt'
+  ])
 
-  const ciphertext = Buffer.allocUnsafe(
-    buffer.length + sodium.crypto_secretbox_MACBYTES
+  // https://developer.mozilla.org/en-US/docs/Web/API/AesGcmParams
+  const iv = Buffer.from(crypto.getRandomValues(new Uint8Array(12)))
+  const cipher = Buffer.from(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, buffer)
   )
 
-  sodium.crypto_secretbox_easy(ciphertext, buffer, nonce, keys[0])
-
-  return ciphertext.toString('base64url') + '.' + nonce.toString('base64url')
+  return cipher.toString('base64url') + '.' + iv.toString('base64url')
 }
 
-export const from = (cookieValue: string, keys: Buffer[]) => {
+export const from = async (cookieValue: string, keys: Buffer[]) => {
   const split = cookieValue.split('.')
-  const cyphertextB64 = split[0]
-  const nonceB64 = split[1]
 
   if (split.length !== 2) {
-    // the cookie is malformed
-    // log.debug(
-    //   'fastify-secure-session: the cookie is malformed, creating an empty session'
-    // )
     return undefined
   }
 
-  const cipher = Buffer.from(cyphertextB64, 'base64url')
-  const nonce = Buffer.from(nonceB64, 'base64url')
+  const [ciperB64, ivB64] = split
 
-  if (cipher.length < sodium.crypto_secretbox_MACBYTES) {
-    // not long enough
-    // log.debug(
-    //   'fastify-secure-session: the cipher is not long enough, creating an empty session'
-    // )
-    return undefined
-  }
+  const cipher = Buffer.from(ciperB64, 'base64url')
+  const iv = Buffer.from(ivB64, 'base64url')
 
-  if (nonce.length !== sodium.crypto_secretbox_NONCEBYTES) {
-    // the length is not correct
-    // log.debug(
-    //   'fastify-secure-session: the nonce does not have the required length, creating an empty session'
-    // )
-    return undefined
-  }
-
-  const value = Buffer.allocUnsafe(
-    cipher.length - sodium.crypto_secretbox_MACBYTES
-  )
-
+  let success = false
   let rotate = false
+  let value: Buffer | undefined
 
-  const success = keys.some((secretKey, index) => {
-    const decoded = sodium.crypto_secretbox_open_easy(
-      value,
-      cipher,
-      nonce,
-      secretKey
+  outer: for (let index = 0; index < keys.length; index++) {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keys[index],
+      {
+        name: 'AES-GCM',
+        length: KEY_LENGTH
+      },
+      false,
+      ['encrypt', 'decrypt']
     )
 
-    rotate = decoded && index > 0
+    try {
+      value = Buffer.from(
+        await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher)
+      )
 
-    return decoded
-  })
-
-  if (!success) {
-    // log.debug(
-    //   'fastify-secure-session: unable to decrypt, creating an empty session'
-    // )
-
-    return undefined
+      rotate = index > 0
+      success = true
+      break outer
+    } catch (e) {
+      continue
+    }
   }
 
-  return { value, rotate }
+  if (success && value !== undefined) {
+    return { value, rotate }
+  }
+
+  return undefined
 }

@@ -1,16 +1,14 @@
 import { assert } from 'chai'
-import sodium from 'sodium-native'
 import { cookie } from './cookie'
 import { to as toSecretbox } from './cookie-type/secretbox'
 import { jar, SYMBOL_JAR, TypeAction } from './jar'
 import { take } from './take'
+import { deriveKey } from './utilities/derive-key'
 
-const keyA = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
-const keyB = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
-const keyC = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
-const keyD = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
-
-;[keyA, keyB, keyC, keyD].map((value) => sodium.randombytes_buf(value))
+const keyA = await deriveKey('key-a', { iterations: 1 })
+const keyB = await deriveKey('key-b', { iterations: 1 })
+const keyC = await deriveKey('key-c', { iterations: 1 })
+const keyD = await deriveKey('key-d', { iterations: 1 })
 
 const vixen = cookie({
   key: 'vixen',
@@ -106,15 +104,15 @@ describe('take', () => {
 
   it('.', async () => {
     const cookieHeader = `__Secure-vixen=${
-      toSecretbox(
+      (await toSecretbox(
         Buffer.from(JSON.stringify({ change: 'triangle', author: 'escape' })),
         [keyC]
-      ) as string
+      )) as string
     }; tycho=${
-      toSecretbox(
+      (await toSecretbox(
         Buffer.from(JSON.stringify(['threw', 'satellites', 'class'])),
         [keyB, keyA]
-      ) as string
+      )) as string
     }; __Host-ball=${Buffer.from('ride problem cause market').toString(
       'base64url'
     )}; abc=qwe`
