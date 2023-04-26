@@ -1,9 +1,9 @@
 import { assert } from 'chai'
-import { jar, SYMBOL_JAR, TypeAction } from './jar'
-import { cookie } from './cookie'
 import sodium from 'sodium-native'
-import { take } from './take'
+import { cookie } from './cookie'
 import { to as toSecretbox } from './cookie-type/secretbox'
+import { jar, SYMBOL_JAR, TypeAction } from './jar'
+import { take } from './take'
 
 const keyA = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
 const keyB = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
@@ -49,6 +49,14 @@ const ball = cookie({
 
 const cookieJar = jar().put(vixen).put(tycho).put(dazzle).put(ball)
 
+async function toArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
+  const out: T[] = []
+  for await (const x of gen) {
+    out.push(x)
+  }
+  return out
+}
+
 describe('jar', () => {
   it('.', () => {
     assert.isFunction(jar)
@@ -84,19 +92,19 @@ describe('jar', () => {
 })
 
 describe('take', () => {
-  it('.', () => {
+  it('.', async () => {
     assert.isFunction(take)
-    assert.hasAllKeys(take('', cookieJar), [
+    assert.hasAllKeys(await take('', cookieJar), [
       'del',
       'get',
       'set',
       'values',
       'entries',
-      Symbol.iterator
+      Symbol.asyncIterator
     ])
   })
 
-  it('.', () => {
+  it('.', async () => {
     const cookieHeader = `__Secure-vixen=${
       toSecretbox(
         Buffer.from(JSON.stringify({ change: 'triangle', author: 'escape' })),
@@ -111,22 +119,22 @@ describe('take', () => {
       'base64url'
     )}; abc=qwe`
 
-    const t = take(cookieHeader, cookieJar, {
+    const t = await take(cookieHeader, cookieJar, {
       tycho(prev?: string[], next?: string[]): string[] {
         return [...(prev ?? []), ...(next ?? [])]
       }
     })
 
-    assert.equal(Array.from(t.values()).length, 2)
+    assert.equal((await toArray(t.values())).length, 2)
 
     assert.ok(
-      Array.from(t.values()).some((value) =>
+      (await toArray(t.values())).some((value) =>
         value.startsWith('__Secure-vixen=')
       )
     )
 
     assert.ok(
-      Array.from(t.values()).some((value) =>
+      (await toArray(t.values())).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
@@ -141,20 +149,20 @@ describe('take', () => {
     t.set('tycho', ['plain'])
     t.set('dazzle', 100)
 
-    assert.equal(Array.from(t.values()).length, 4)
+    assert.equal((await toArray(t.values())).length, 4)
     assert.ok(
-      Array.from(t.values()).some((value) =>
+      (await toArray(t.values())).some((value) =>
         value.startsWith('__Secure-vixen=')
       )
     )
     assert.ok(
-      Array.from(t.values()).some((value) => value.startsWith('tycho='))
+      (await toArray(t.values())).some((value) => value.startsWith('tycho='))
     )
     assert.ok(
-      Array.from(t.values()).some((value) => value.startsWith('dazzle='))
+      (await toArray(t.values())).some((value) => value.startsWith('dazzle='))
     )
     assert.ok(
-      Array.from(t.values()).some((value) =>
+      (await toArray(t.values())).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
@@ -181,24 +189,28 @@ describe('take', () => {
     t.del('dazzle')
     t.del('ball')
 
-    assert.equal(Array.from(t.values()).length, 3)
+    assert.equal((await toArray(t.values())).length, 3)
     assert.ok(
-      Array.from(t.values()).some((value) =>
+      (await toArray(t.values())).some((value) =>
         value.startsWith('__Secure-vixen=; Expires=')
       )
     )
     assert.ok(
-      Array.from(t.values()).some((value) =>
+      (await toArray(t.values())).some((value) =>
         value.startsWith('tycho=; Domain=example.com; Path=/tycho; Expires=')
       )
     )
     assert.ok(
-      Array.from(t.values()).some((value) =>
+      (await toArray(t.values())).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
 
-    assert.hasAllKeys(Object.fromEntries(t), ['vixen', 'tycho', 'ball'])
+    assert.hasAllKeys(Object.fromEntries(await toArray(t)), [
+      'vixen',
+      'tycho',
+      'ball'
+    ])
 
     // @ts-expect-error type
     assert.throws(() => t.del('abc'))

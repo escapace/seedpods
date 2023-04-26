@@ -6,10 +6,10 @@ import { to, from } from './hmac'
 // 'man-independent-needed-full'
 
 describe('hmac', () => {
-  it('key', () => {
+  it('key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const signedCookie = to(cookieValue, [
+    const signedCookie = await to(cookieValue, [
       Buffer.from('chain-happy-record-blank')
     ])
 
@@ -18,17 +18,17 @@ describe('hmac', () => {
       'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
     )
 
-    const unsignedCookie = from(signedCookie as string, [
+    const unsignedCookie = await from(signedCookie as string, [
       Buffer.from('chain-happy-record-blank')
     ])
 
     assert.deepEqual(unsignedCookie, { value: cookieValue, rotate: false })
   })
 
-  it('wrong key', () => {
+  it('wrong key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const signedCookie = to(cookieValue, [
+    const signedCookie = await to(cookieValue, [
       Buffer.from('chain-happy-record-blank')
     ])
 
@@ -37,17 +37,17 @@ describe('hmac', () => {
       'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
     )
 
-    const unsignedCookie = from(signedCookie as string, [
+    const unsignedCookie = await from(signedCookie as string, [
       Buffer.from('record-blank')
     ])
 
     assert.equal(unsignedCookie, undefined)
   })
 
-  it('second key', () => {
+  it('second key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const signedCookie = to(cookieValue, [
+    const signedCookie = await to(cookieValue, [
       Buffer.from('chain-happy-record-blank')
     ])
 
@@ -56,7 +56,7 @@ describe('hmac', () => {
       'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
     )
 
-    const unsignedCookie = from(signedCookie as string, [
+    const unsignedCookie = await from(signedCookie as string, [
       Buffer.from('desk-species-eventually-vowel'),
       Buffer.from('chain-happy-record-blank')
     ])
@@ -64,26 +64,26 @@ describe('hmac', () => {
     assert.deepEqual(unsignedCookie, { value: cookieValue, rotate: true })
   })
 
-  it('empty', () => {
+  it('empty', async () => {
     assert.equal(
-      to(Buffer.from(''), [Buffer.from('chain-happy-record-blank')]),
+      await to(Buffer.from(''), [Buffer.from('chain-happy-record-blank')]),
       undefined
     )
 
     assert.equal(
-      to(Buffer.from([]), [Buffer.from('chain-happy-record-blank')]),
+      await to(Buffer.from([]), [Buffer.from('chain-happy-record-blank')]),
       undefined
     )
   })
 
-  it('malformed', () => {
+  it('malformed', async () => {
     assert.equal(
-      from('', [Buffer.from('desk-species-eventually-vowel')]),
+      await from('', [Buffer.from('desk-species-eventually-vowel')]),
       undefined
     )
 
     assert.equal(
-      from('.asd', [Buffer.from('desk-species-eventually-vowel')]),
+      await from('.asd', [Buffer.from('desk-species-eventually-vowel')]),
       undefined
     )
   })

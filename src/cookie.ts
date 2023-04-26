@@ -65,8 +65,8 @@ export interface Cookie<
 > {
   readonly [SYMBOL_COOKIE]: {
     name: string
-    fromString: (value: string | undefined) => CookieState
-    toString: (value: CookieState) => string | undefined
+    fromString: (value: string | undefined) => Promise<CookieState>
+    toString: (value: CookieState) => Promise<string | undefined>
     readonly options: CookieOptionsParsed<KEY, TYPE, VALUE>
   }
 }
@@ -133,12 +133,12 @@ export const cookie = <
   return {
     [SYMBOL_COOKIE]: {
       name,
-      fromString(cookieValue: string | undefined): CookieState {
+      async fromString(cookieValue: string | undefined): Promise<CookieState> {
         if (cookieValue === undefined) {
           return { type: TypeCookieState.Unset }
         }
 
-        const result = from(cookieValue, options.keys)
+        const result = await from(cookieValue, options.keys)
 
         const indecipherable = { type: TypeCookieState.Indecipherable as const }
 
@@ -159,7 +159,7 @@ export const cookie = <
           value
         }
       },
-      toString(state: CookieState) {
+      async toString(state: CookieState) {
         if (
           state.type === TypeCookieState.Expired ||
           state.type === TypeCookieState.Indecipherable
@@ -177,7 +177,7 @@ export const cookie = <
             return undefined
           }
 
-          const cookieValue = to(value, options.keys)
+          const cookieValue = await to(value, options.keys)
 
           return cookieValue === undefined // || !validateCookieValue(value)
             ? undefined

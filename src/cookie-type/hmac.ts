@@ -6,37 +6,39 @@
  *
  */
 
-import crypto from 'node:crypto'
+import { timingSafeEqual } from '../utilities/timing-safe-equal'
 
-export const to = function (
+export const to = async function (
   buffer: Buffer,
   keys: Buffer[],
   keyIndex = 0
-): string | undefined {
+): Promise<string | undefined> {
   if (buffer.length === 0) {
     return undefined
   }
 
-  return (
-    buffer.toString('base64url') +
-    '.' +
-    crypto
-      .createHmac('sha256', keys[keyIndex])
-      .update(buffer)
-      .digest('base64url')
+  const key = await subtle.importKey(
+    'raw',
+    keys[keyIndex],
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
   )
+  const signature = Buffer.from(await subtle.sign('HMAC', key, buffer))
+
+  return buffer.toString('base64url') + '.' + signature.toString('base64url')
 }
 
 export function compare(a: Buffer, b: Buffer) {
   if (a.length !== b.length) {
-    crypto.timingSafeEqual(a, a)
+    timingSafeEqual(a, a)
     return false
   }
 
-  return crypto.timingSafeEqual(a, b)
+  return timingSafeEqual(a, b)
 }
 
-export const from = (cookieValue: string, keys: Buffer[]) => {
+export const from = async (cookieValue: string, keys: Buffer[]) => {
   const split = cookieValue.split('.')
   const valueB64 = split[0]
 
@@ -48,14 +50,15 @@ export const from = (cookieValue: string, keys: Buffer[]) => {
   // const digest = Buffer.from(digestB64, 'base64url')
 
   let rotate = false
+  let success = false
 
   const inputBuffer = Buffer.from(cookieValue)
 
-  const success = keys.some((_, index) => {
-    const expectedInput = to(value, keys, index)
+  for (let index = 0; index < keys.length; index++) {
+    const expectedInput = await to(value, keys, index)
 
     if (expectedInput === undefined) {
-      return false
+      continue
     }
 
     const expectedBuffer = Buffer.from(expectedInput)
@@ -64,8 +67,11 @@ export const from = (cookieValue: string, keys: Buffer[]) => {
 
     rotate = decoded && index > 0
 
-    return decoded
-  })
+    if (decoded) {
+      success = true
+      break
+    }
+  }
 
   if (!success) {
     return undefined
