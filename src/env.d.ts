@@ -1,1 +1,4 @@
-declare const subtle: SubtleCrypto
+declare const crypto = {
+  subtle: SubtleCrypto,
+  getRandomValues: typeof Crypto.getRandomValues
+}

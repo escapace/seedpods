@@ -57,7 +57,7 @@ await build(
   merge(cloneDeep(buildOptions), {
     outdir: path.join(cwd, `lib/node`),
     banner: {
-      js: 'import { subtle } from "crypto"'
+      js: 'import crypto from "crypto"'
     },
     target,
     platform: 'node'
@@ -67,9 +67,6 @@ await build(
 await build(
   merge(cloneDeep(buildOptions), {
     outdir: path.join(cwd, `lib/default`),
-    banner: {
-      js: 'const subtle = new SubtleCrypto()'
-    },
     target: 'esnext',
     platform: 'browser'
   })

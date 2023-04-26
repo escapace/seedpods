@@ -1,11 +1,3 @@
-/*!
- *
- * Adaptation of https://github.com/tj/node-cookie-signature licensed under the
- * MIT License found in the LICENSE-COOKIE-SIGNATURE file in the root
- * directory of this source tree.
- *
- */
-
 import { timingSafeEqual } from '../utilities/timing-safe-equal'
 
 export const to = async function (
@@ -17,14 +9,14 @@ export const to = async function (
     return undefined
   }
 
-  const key = await subtle.importKey(
+  const key = await crypto.subtle.importKey(
     'raw',
     keys[keyIndex],
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign', 'verify']
   )
-  const signature = Buffer.from(await subtle.sign('HMAC', key, buffer))
+  const signature = Buffer.from(await crypto.subtle.sign('HMAC', key, buffer))
 
   return buffer.toString('base64url') + '.' + signature.toString('base64url')
 }
@@ -47,7 +39,6 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
   }
 
   const value = Buffer.from(valueB64, 'base64url')
-  // const digest = Buffer.from(digestB64, 'base64url')
 
   let rotate = false
   let success = false

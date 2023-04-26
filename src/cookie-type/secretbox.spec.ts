@@ -1,57 +1,58 @@
 import { assert } from 'chai'
-import { to, from } from './secretbox'
-import sodium from 'sodium-native'
+import { deriveKey } from '../utilities/derive-key'
+import { from, to } from './secretbox'
 
-const keyA = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
-const keyB = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
-const keyC = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES)
-
-;[keyA, keyB, keyC].map((value) => sodium.randombytes_buf(value))
+const keyA = await deriveKey('key-a', { iterations: 1 })
+const keyB = await deriveKey('key-b', { iterations: 1 })
+const keyC = await deriveKey('key-c', { iterations: 1 })
 
 describe('keybox', () => {
-  it('key', () => {
+  it('key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const encryptedCookie = to(cookieValue, [keyA])
+    const encryptedCookie = await to(cookieValue, [keyA])
 
-    const decryptedCookie = from(encryptedCookie as string, [keyA])
+    const decryptedCookie = await from(encryptedCookie as string, [keyA])
 
     assert.deepEqual(decryptedCookie, { value: cookieValue, rotate: false })
   })
 
-  it('wrong key', () => {
+  it('wrong key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const encryptedCookie = to(cookieValue, [keyA])
+    const encryptedCookie = await to(cookieValue, [keyA])
 
-    const decryptedCookie = from(encryptedCookie as string, [keyB])
+    const decryptedCookie = await from(encryptedCookie as string, [keyB])
 
     assert.equal(decryptedCookie, undefined)
   })
 
-  it('second key', () => {
+  it('second key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const encryptedCookie = to(cookieValue, [keyB, keyC])
+    const encryptedCookie = await to(cookieValue, [keyB, keyC])
 
-    const decryptedCookie = from(encryptedCookie as string, [keyA, keyB])
+    const decryptedCookie = await from(encryptedCookie as string, [keyA, keyB])
 
     assert.deepEqual(decryptedCookie, { value: cookieValue, rotate: true })
   })
 
-  it('empty', () => {
-    assert.equal(to(Buffer.from(''), [keyA]), undefined)
+  it('empty', async () => {
+    assert.equal(await to(Buffer.from(''), [keyA]), undefined)
 
-    assert.equal(to(Buffer.from([]), [keyA]), undefined)
+    assert.equal(await to(Buffer.from([]), [keyA]), undefined)
   })
 
-  it('malformed', () => {
-    assert.equal(from('', [keyA]), undefined)
+  it('malformed', async () => {
+    assert.equal(await from('', [keyA]), undefined)
 
-    assert.equal(from('.asd', [keyA]), undefined)
+    assert.equal(await from('.asd', [keyA]), undefined)
 
     assert.equal(
-      from((to(Buffer.from('hello'), [keyA]) as string).slice(0, -1), [keyA]),
+      await from(
+        ((await to(Buffer.from('hello'), [keyA])) as string).slice(0, -1),
+        [keyA]
+      ),
       undefined
     )
   })
