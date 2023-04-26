@@ -1,15 +1,11 @@
 import { first, isEqual, isFunction, last, map } from 'lodash-es'
-import { IncomingHttpHeaders as HTTPIncomingHttpHeaders } from 'node:http'
-import { IncomingHttpHeaders as HTTP2IncomingHttpHeaders } from 'node:http2'
 import { CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
 import { JAR, Keys, SYMBOL_JAR, Value } from './jar'
 
 import { JSONType } from './types'
 import { parseCookieHeader } from './utilities/parse-cookie-header'
 
-type CookieHeader =
-  | HTTPIncomingHttpHeaders['cookie']
-  | HTTP2IncomingHttpHeaders['cookie']
+type CookieHeader = string | undefined
 
 export type Reducer<T extends JSONType> = (
   prev?: T | undefined,
@@ -21,12 +17,12 @@ type Reducers<T extends JAR> = {
 }
 
 interface Take<T extends JAR> {
-  [Symbol.iterator]: () => IterableIterator<[Keys<T>, string]>
+  [Symbol.asyncIterator]: () => AsyncIterableIterator<[Keys<T>, string]>
   get: <U extends Keys<T>>(key: U) => undefined | Value<T, U>
   set: <U extends Keys<T>>(key: U, value: Value<T, U> | undefined) => void
   del: (key: Keys<T>) => void
-  entries: () => IterableIterator<[Keys<T>, string]>
-  values: () => IterableIterator<string>
+  entries: () => AsyncIterableIterator<[Keys<T>, string]>
+  values: () => AsyncIterableIterator<string>
 }
 
 const cookieValue = (state: CookieState): JSONType | undefined =>
@@ -35,23 +31,31 @@ const cookieValue = (state: CookieState): JSONType | undefined =>
     ? state.value
     : undefined
 
-export const take = <T extends JAR>(
+export const take = async <T extends JAR>(
   cookieHeader: CookieHeader,
   jar: T,
   reducers: Reducers<T> = {}
-): Take<T> => {
+): Promise<Take<T>> => {
   const cookies = jar[SYMBOL_JAR].state.cookies
   const parsedCookieHeader = parseCookieHeader(cookieHeader)
 
   const state: Map<string, [CookieState, ...CookieState[]]> = new Map(
-    map(cookies, (cookie, key) => [
-      key,
-      [
-        cookie[SYMBOL_COOKIE].fromString(
-          parsedCookieHeader.get(cookie[SYMBOL_COOKIE].name)
-        )
-      ]
-    ])
+    await Promise.all(
+      map(
+        cookies,
+        async (
+          cookie,
+          key
+        ): Promise<[string, [CookieState, ...CookieState[]]]> => [
+          key,
+          [
+            await cookie[SYMBOL_COOKIE].fromString(
+              parsedCookieHeader.get(cookie[SYMBOL_COOKIE].name)
+            )
+          ]
+        ]
+      )
+    )
   )
 
   const get = (key: string) => {
@@ -124,7 +128,7 @@ export const take = <T extends JAR>(
     ])
   }
 
-  function* entries() {
+  async function* entries() {
     for (const [key, cookieStates] of state) {
       const cookie = cookies[key][SYMBOL_COOKIE]
 
@@ -139,14 +143,14 @@ export const take = <T extends JAR>(
         lastCookieState.type === TypeCookieState.Set
       ) {
         if (!isEqual(firstCookieValue, lastCookieValue)) {
-          const value = cookie.toString(lastCookieState)
+          const value = await cookie.toString(lastCookieState)
 
           if (value !== undefined) {
             yield [key, value] as const
           }
         }
       } else {
-        const value = cookie.toString(lastCookieState)
+        const value = await cookie.toString(lastCookieState)
 
         if (value !== undefined) {
           yield [key, value] as const
@@ -155,9 +159,9 @@ export const take = <T extends JAR>(
     }
   }
 
-  function* values() {
+  async function* values() {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const [_, value] of entries()) {
+    for await (const [_, value] of entries()) {
       yield value
     }
   }
@@ -168,7 +172,7 @@ export const take = <T extends JAR>(
     set,
     del,
     entries,
-    [Symbol.iterator]: entries,
+    [Symbol.asyncIterator]: entries,
     values
   } as Take<T>
 }

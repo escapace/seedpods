@@ -26,6 +26,12 @@ await build({
   external,
   format: 'esm',
   logLevel: 'info',
+  banner: {
+    js: 'import { subtle } from "crypto"'
+  },
+  define: {
+    __NODE__: JSON.stringify(true)
+  },
   outbase: directorySrc,
   outdir: directoryTests,
   platform: 'node',

@@ -1,46 +1,76 @@
 import { build } from 'esbuild'
 import { execa } from 'execa'
 import fse from 'fs-extra'
-import { mkdir } from 'fs/promises'
+import { cloneDeep, merge } from 'lodash-es'
 import path from 'path'
-import { cwd, target, external } from './constants.mjs'
+import process from 'process'
+import { cwd, external, name, target } from './constants.mjs'
+
+const tsconfig = fse.existsSync(path.join(cwd, 'tsconfig-build.json'))
+  ? path.join(cwd, 'tsconfig-build.json')
+  : path.join(cwd, 'tsconfig.json')
 
 process.umask(0o022)
 process.chdir(cwd)
 
-const outdir = path.join(cwd, 'lib/esm')
-
-await fse.remove(outdir)
-await mkdir(outdir, { recursive: true })
-
-await build({
-  bundle: true,
-  entryPoints: ['src/index.ts'],
-  external: ['esbuild', ...external],
-  format: 'esm',
-  logLevel: 'info',
-  outExtension: { '.js': '.mjs' },
-  outbase: path.join(cwd, 'src'),
-  outdir,
-  platform: 'node',
-  sourcemap: true,
-  target,
-  tsconfig: path.join(cwd, 'tsconfig-build.json')
-})
-
-await fse.remove(path.join(cwd, 'lib/types'))
+await fse.remove(path.join(cwd, 'lib'))
 
 await execa(
   path.join(cwd, 'node_modules', '.bin', 'tsc'),
   [
     '-p',
-    './tsconfig-build.json',
+    path.relative(cwd, tsconfig),
+    '--declaration',
     '--emitDeclarationOnly',
     '--declarationDir',
     'lib/types'
   ],
-  { all: true, cwd }
+  {
+    all: true,
+    cwd
+  }
 ).catch((reason) => {
   console.error(reason.all)
   process.exit(reason.exitCode)
 })
+
+const buildOptions = {
+  bundle: true,
+  mainFields: ['module'],
+  entryPoints: ['src/index.ts'],
+  external: [...external],
+  format: 'esm',
+  logLevel: 'info',
+  target,
+  outExtension: { '.js': '.mjs' },
+  outdir: path.join(cwd, `lib/esm`),
+  platform: 'neutral',
+  treeShaking: true,
+  // minify: true,
+  minifySyntax: true,
+  sourcemap: true,
+  splitting: true,
+  tsconfig
+}
+
+await build(
+  merge(cloneDeep(buildOptions), {
+    outdir: path.join(cwd, `lib/node`),
+    banner: {
+      js: 'import { subtle } from "crypto"'
+    },
+    target,
+    platform: 'node'
+  })
+)
+
+await build(
+  merge(cloneDeep(buildOptions), {
+    outdir: path.join(cwd, `lib/default`),
+    banner: {
+      js: 'const subtle = new SubtleCrypto()'
+    },
+    target: 'esnext',
+    platform: 'browser'
+  })
+)

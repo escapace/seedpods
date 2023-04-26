@@ -9,6 +9,7 @@ export const cwd = path.resolve(
 )
 
 export const packageJSON = await fse.readJSON(path.join(cwd, 'package.json'))
+export const name = packageJSON.name
 export const external = [
   ...Object.keys(packageJSON.dependencies ?? {}),
   ...Object.keys(packageJSON.peerDependencies ?? {})

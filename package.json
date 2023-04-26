@@ -50,8 +50,18 @@
   },
   "exports": {
     ".": {
-      "import": "./lib/esm/index.mjs",
-      "types": "./lib/types/index.d.ts"
+      "node": {
+        "import": {
+          "types": "./lib/types/index.d.ts",
+          "default": "./lib/node/index.mjs"
+        }
+      },
+      "default": {
+        "import": {
+          "types": "./lib/types/index.d.ts",
+          "default": "./lib/default/index.mjs"
+        }
+      }
     }
   },
   "files": [
@@ -64,7 +74,6 @@
   ],
   "homepage": "https://github.com/escapace/seedpods",
   "license": "MPL-2.0",
-  "module": "lib/esm/index.mjs",
   "private": false,
   "publishConfig": {
     "access": "public"

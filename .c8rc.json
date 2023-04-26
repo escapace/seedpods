@@ -2,6 +2,7 @@
   "all": true,
   "reporter": ["json", "text"],
   "exclude": [
+    "**/*.d.ts",
     "node_modules/**",
     "**/*.spec.?(m)@(j|t)s?(x)",
     "scripts",
