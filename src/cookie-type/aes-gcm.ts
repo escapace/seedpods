@@ -1,7 +1,5 @@
 /* eslint-disable no-labels */
 
-const KEY_LENGTH = 256
-
 export const to = async (
   buffer: Buffer,
   keys: Buffer[]
@@ -44,10 +42,7 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
     const key = await crypto.subtle.importKey(
       'raw',
       keys[index],
-      {
-        name: 'AES-GCM',
-        length: KEY_LENGTH
-      },
+      'AES-GCM',
       false,
       ['encrypt', 'decrypt']
     )

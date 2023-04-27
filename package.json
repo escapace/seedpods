@@ -3,6 +3,9 @@
   "description": "",
   "version": "0.0.0",
   "author": "escapace <opensource@escapace.com>",
+  "bin": {
+    "seedpods": "./lib/cli/cli.mjs"
+  },
   "bugs": "https://github.com/escapace/seedpods/issues",
   "dependencies": {
     "@escapace/typelevel": "^1.3.3",
@@ -55,6 +58,12 @@
           "default": "./lib/node/index.mjs"
         }
       },
+      "workerd": {
+        "import": {
+          "types": "./lib/types/index.d.ts",
+          "default": "./lib/default/index.mjs"
+        }
+      },
       "default": {
         "import": {
           "types": "./lib/types/index.d.ts",
@@ -64,7 +73,9 @@
     }
   },
   "files": [
-    "lib/esm",
+    "lib/cli",
+    "lib/default",
+    "lib/node",
     "lib/types",
     "LICENSE-DENO-STD",
     "LICENSE-JSHTTP-COOKIE"
