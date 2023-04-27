@@ -1,6 +1,6 @@
 import { assert } from 'chai'
 import { cookie } from './cookie'
-import { to as toSecretbox } from './cookie-type/secretbox'
+import { to as toAesGcm } from './cookie-type/aes-gcm'
 import { jar, SYMBOL_JAR, TypeAction } from './jar'
 import { take } from './take'
 import { deriveKey } from './utilities/derive-key'
@@ -12,16 +12,16 @@ const keyD = await deriveKey('key-d', { iterations: 1 })
 
 const vixen = cookie({
   key: 'vixen',
-  type: 'secretbox',
+  type: 'aes-gcm',
   secure: true,
   prefix: '__Secure-',
   maxAge: 86400,
   keys: [keyA, keyC]
 })
 
-const tycho = cookie<'tycho', 'secretbox', string[]>({
+const tycho = cookie<'tycho', 'aes-gcm', string[]>({
   key: 'tycho',
-  type: 'secretbox',
+  type: 'aes-gcm',
   domain: 'example.com',
   keys: [keyB, keyA],
   path: '/tycho'
@@ -104,12 +104,12 @@ describe('take', () => {
 
   it('.', async () => {
     const cookieHeader = `__Secure-vixen=${
-      (await toSecretbox(
+      (await toAesGcm(
         Buffer.from(JSON.stringify({ change: 'triangle', author: 'escape' })),
         [keyC]
       )) as string
     }; tycho=${
-      (await toSecretbox(
+      (await toAesGcm(
         Buffer.from(JSON.stringify(['threw', 'satellites', 'class'])),
         [keyB, keyA]
       )) as string

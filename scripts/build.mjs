@@ -46,7 +46,6 @@ const buildOptions = {
   outdir: path.join(cwd, `lib/esm`),
   platform: 'neutral',
   treeShaking: true,
-  // minify: true,
   minifySyntax: true,
   sourcemap: true,
   splitting: true,
@@ -69,5 +68,17 @@ await build(
     outdir: path.join(cwd, `lib/default`),
     target: 'esnext',
     platform: 'browser'
+  })
+)
+
+await build(
+  merge(cloneDeep(buildOptions), {
+    outdir: path.join(cwd, `lib/cli`),
+    entryPoints: ['src/cli.ts'],
+    banner: {
+      js: 'import crypto from "crypto"'
+    },
+    target,
+    platform: 'node'
   })
 )

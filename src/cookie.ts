@@ -1,11 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { isPlainObject } from 'lodash-es'
+import { from as fromAesGcm, to as toAesGcm } from './cookie-type/aes-gcm'
 import { from as fromHmac, to as toHmac } from './cookie-type/hmac'
-import {
-  from as fromSecretbox,
-  to as toSecretbox
-} from './cookie-type/secretbox'
 import { JSONType } from './types'
 import { decode } from './utilities/decode'
 import { encode } from './utilities/encode'
@@ -127,8 +124,8 @@ export const cookie = <
   const outDeleteString =
     expireSuffixArray.length === 0 ? '' : `; ${expireSuffixArray.join('; ')}`
 
-  const to = options.type === 'hmac' ? toHmac : toSecretbox
-  const from = options.type === 'hmac' ? fromHmac : fromSecretbox
+  const to = options.type === 'hmac' ? toHmac : toAesGcm
+  const from = options.type === 'hmac' ? fromHmac : fromAesGcm
 
   return {
     [SYMBOL_COOKIE]: {
@@ -179,7 +176,7 @@ export const cookie = <
 
           const cookieValue = await to(value, options.keys)
 
-          return cookieValue === undefined // || !validateCookieValue(value)
+          return cookieValue === undefined
             ? undefined
             : `${name}=${cookieValue}${suffix}`
         }

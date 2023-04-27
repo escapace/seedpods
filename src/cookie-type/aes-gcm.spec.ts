@@ -1,12 +1,12 @@
 import { assert } from 'chai'
 import { deriveKey } from '../utilities/derive-key'
-import { from, to } from './secretbox'
+import { from, to } from './aes-gcm'
 
 const keyA = await deriveKey('key-a', { iterations: 1 })
 const keyB = await deriveKey('key-b', { iterations: 1 })
 const keyC = await deriveKey('key-c', { iterations: 1 })
 
-describe('keybox', () => {
+describe('aes-gcm', () => {
   it('key', async () => {
     const cookieValue = Buffer.from('hello')
 

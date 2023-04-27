@@ -32,7 +32,7 @@ const cookieValue = (state: CookieState): JSONType | undefined =>
     : undefined
 
 export const take = async <T extends JAR>(
-  cookieHeader: CookieHeader,
+  cookieHeader: CookieHeader | undefined,
   jar: T,
   reducers: Reducers<T> = {}
 ): Promise<Take<T>> => {
@@ -128,6 +128,7 @@ export const take = async <T extends JAR>(
     ])
   }
 
+  // TODO: parrallelize
   async function* entries() {
     for (const [key, cookieStates] of state) {
       const cookie = cookies[key][SYMBOL_COOKIE]

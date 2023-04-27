@@ -75,7 +75,7 @@ const cookieOptionsSchema = z
   .discriminatedUnion('type', [
     baseOptionsSchema
       .extend({
-        type: z.literal('secretbox'),
+        type: z.literal('aes-gcm'),
         keys: z
           .array(
             z
