@@ -128,7 +128,7 @@ export const take = async <T extends JAR>(
     ])
   }
 
-  async function entries(): Promise<Array<[string, string]>> {
+  const entries = async (): Promise<Array<[string, string]>> => {
     const promises: Array<Promise<[string, string] | undefined>> = []
 
     for (const [key, cookieStates] of state) {
@@ -169,9 +169,8 @@ export const take = async <T extends JAR>(
     )
   }
 
-  async function values(): Promise<string[]> {
-    return (await entries()).map(([_, value]) => value)
-  }
+  const values = async (): Promise<string[]> =>
+    (await entries()).map(([_, value]) => value)
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
