@@ -47,14 +47,6 @@ const ball = cookie({
 
 const cookieJar = jar().put(vixen).put(tycho).put(dazzle).put(ball)
 
-async function toArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
-  const out: T[] = []
-  for await (const x of gen) {
-    out.push(x)
-  }
-  return out
-}
-
 describe('jar', () => {
   it('.', () => {
     assert.isFunction(jar)
@@ -97,8 +89,7 @@ describe('take', () => {
       'get',
       'set',
       'values',
-      'entries',
-      Symbol.asyncIterator
+      'entries'
     ])
   })
 
@@ -123,16 +114,14 @@ describe('take', () => {
       }
     })
 
-    assert.equal((await toArray(t.values())).length, 2)
+    assert.equal((await t.values()).length, 2)
 
     assert.ok(
-      (await toArray(t.values())).some((value) =>
-        value.startsWith('__Secure-vixen=')
-      )
+      (await t.values()).some((value) => value.startsWith('__Secure-vixen='))
     )
 
     assert.ok(
-      (await toArray(t.values())).some((value) =>
+      (await t.values()).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
@@ -147,20 +136,14 @@ describe('take', () => {
     t.set('tycho', ['plain'])
     t.set('dazzle', 100)
 
-    assert.equal((await toArray(t.values())).length, 4)
+    assert.equal((await t.values()).length, 4)
     assert.ok(
-      (await toArray(t.values())).some((value) =>
-        value.startsWith('__Secure-vixen=')
-      )
+      (await t.values()).some((value) => value.startsWith('__Secure-vixen='))
     )
+    assert.ok((await t.values()).some((value) => value.startsWith('tycho=')))
+    assert.ok((await t.values()).some((value) => value.startsWith('dazzle=')))
     assert.ok(
-      (await toArray(t.values())).some((value) => value.startsWith('tycho='))
-    )
-    assert.ok(
-      (await toArray(t.values())).some((value) => value.startsWith('dazzle='))
-    )
-    assert.ok(
-      (await toArray(t.values())).some((value) =>
+      (await t.values()).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
@@ -187,24 +170,24 @@ describe('take', () => {
     t.del('dazzle')
     t.del('ball')
 
-    assert.equal((await toArray(t.values())).length, 3)
+    assert.equal((await t.values()).length, 3)
     assert.ok(
-      (await toArray(t.values())).some((value) =>
+      (await t.values()).some((value) =>
         value.startsWith('__Secure-vixen=; Expires=')
       )
     )
     assert.ok(
-      (await toArray(t.values())).some((value) =>
+      (await t.values()).some((value) =>
         value.startsWith('tycho=; Domain=example.com; Path=/tycho; Expires=')
       )
     )
     assert.ok(
-      (await toArray(t.values())).some((value) =>
+      (await t.values()).some((value) =>
         value.startsWith('__Host-ball=; Path=/; Expires=')
       )
     )
 
-    assert.hasAllKeys(Object.fromEntries(await toArray(t)), [
+    assert.hasAllKeys(Object.fromEntries(await t.entries()), [
       'vixen',
       'tycho',
       'ball'

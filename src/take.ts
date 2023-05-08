@@ -21,8 +21,8 @@ interface Take<T extends JAR> {
   get: <U extends Keys<T>>(key: U) => undefined | Value<T, U>
   set: <U extends Keys<T>>(key: U, value: Value<T, U> | undefined) => void
   del: (key: Keys<T>) => void
-  entries: () => AsyncIterableIterator<[Keys<T>, string]>
-  values: () => AsyncIterableIterator<string>
+  entries: () => Promise<Array<[Keys<T>, string]>>
+  values: () => Promise<string[]>
 }
 
 const cookieValue = (state: CookieState): JSONType | undefined =>
@@ -128,8 +128,9 @@ export const take = async <T extends JAR>(
     ])
   }
 
-  // TODO: parrallelize
-  async function* entries() {
+  async function entries(): Promise<Array<[string, string]>> {
+    const promises: Array<Promise<[string, string] | undefined>> = []
+
     for (const [key, cookieStates] of state) {
       const cookie = cookies[key][SYMBOL_COOKIE]
 
@@ -139,32 +140,37 @@ export const take = async <T extends JAR>(
       const lastCookieState = last(cookieStates) as CookieState
       const lastCookieValue = cookieValue(lastCookieState)
 
+      const firstCookieIsSet = firstCookieState.type === TypeCookieState.Set
+      const lastCookieIsSet = lastCookieState.type === TypeCookieState.Set
+
       if (
-        firstCookieState.type === TypeCookieState.Set &&
-        lastCookieState.type === TypeCookieState.Set
+        !(
+          firstCookieIsSet &&
+          lastCookieIsSet &&
+          isEqual(firstCookieValue, lastCookieValue)
+        )
       ) {
-        if (!isEqual(firstCookieValue, lastCookieValue)) {
-          const value = await cookie.toString(lastCookieState)
-
-          if (value !== undefined) {
-            yield [key, value] as const
-          }
-        }
-      } else {
-        const value = await cookie.toString(lastCookieState)
-
-        if (value !== undefined) {
-          yield [key, value] as const
-        }
+        promises.push(
+          cookie
+            .toString(lastCookieState)
+            .then((value): undefined | [string, string] => {
+              if (typeof value === 'undefined') {
+                return undefined
+              } else {
+                return [key, value]
+              }
+            })
+        )
       }
     }
+
+    return (await Promise.all(promises)).filter(
+      (value): value is [string, string] => typeof value !== 'undefined'
+    )
   }
 
-  async function* values() {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for await (const [_, value] of entries()) {
-      yield value
-    }
+  async function values(): Promise<string[]> {
+    return (await entries()).map(([_, value]) => value)
   }
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -173,7 +179,6 @@ export const take = async <T extends JAR>(
     set,
     del,
     entries,
-    [Symbol.asyncIterator]: entries,
     values
   } as Take<T>
 }
