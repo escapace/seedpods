@@ -17,7 +17,6 @@ type Reducers<T extends JAR> = {
 }
 
 interface Take<T extends JAR> {
-  [Symbol.asyncIterator]: () => AsyncIterableIterator<[Keys<T>, string]>
   get: <U extends Keys<T>>(key: U) => undefined | Value<T, U>
   set: <U extends Keys<T>>(key: U, value: Value<T, U> | undefined) => void
   del: (key: Keys<T>) => void
