@@ -5,10 +5,6 @@ on:
     tags:
       - 'v*'
 
-# Remove default permissions of GITHUB_TOKEN for security
-# https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
-permissions: {}
-
 env:
   # 7 GiB by default on GitHub, setting to 6 GiB
   # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
@@ -17,15 +13,11 @@ env:
 jobs:
   context:
     uses: ./.github/workflows/workflow-call-context.yaml
-    permissions:
-      contents: read
   ci:
     if: needs.context.outputs.environment == 'production'
     uses: ./.github/workflows/workflow-call-ci.yaml
     needs:
       - context
-    permissions:
-      contents: read
     with:
       ref: ${{ needs.context.outputs.ref }}
       node-version: ${{ needs.context.outputs.node-version }}
