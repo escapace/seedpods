@@ -45,12 +45,14 @@ jobs:
       - name: write .npmrc
         run: |
           cat << EOF > "$HOME/.npmrc"
+            //registry.npmjs.org/:_authToken=$NPM_TOKEN
             //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
             @escapace:registry=https://npm.pkg.github.com
             always-auth=true
           EOF
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: install pnpm
         uses: pnpm/action-setup@v2.2.4
         with:
