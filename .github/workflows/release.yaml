@@ -50,6 +50,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ needs.context.outputs.node-version }}
+      - name: write .npmrc
+        run: |
+          cat << EOF > "$HOME/.npmrc"
+            //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
+            @escapace:registry=https://npm.pkg.github.com
+            always-auth=true
+          EOF
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: install pnpm
         uses: pnpm/action-setup@v2.2.4
         with:
@@ -72,13 +81,6 @@ jobs:
         with:
           name: ci
           path: lib
-      - name: write .npmrc
-        run: |
-          cat << EOF > "$HOME/.npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: pnpm release
         run: |
           pnpm run release -- ${{ needs.context.outputs.version }}
