@@ -1,5 +1,5 @@
-export { take } from './take'
-export { jar } from './jar'
 export { cookie } from './cookie'
-
+export { jar } from './jar'
+export { take } from './take'
 export type { JSONType } from './types'
+export { deriveKey } from './utilities/derive-key'
