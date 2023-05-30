@@ -22,7 +22,7 @@ jobs:
       ref: ${{ needs.context.outputs.ref }}
       node-version: ${{ needs.context.outputs.node-version }}
       pnpm-version: ${{ needs.context.outputs.pnpm-version }}
-      upload: true
+      upload-context: true
   release:
     if: needs.context.outputs.environment == 'production'
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
       - name: restore lib cache
         uses: actions/download-artifact@v3
         with:
-          name: ci
+          name: context
           path: lib
       - name: pnpm release
         run: |
