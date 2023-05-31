@@ -42,7 +42,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: package
-      - name: publish
+      - name: install latest npm
+        run: |
+          npm install -g npm
+          npm --version
+      - name: publish to npmjs
         run: |
           cat << EOF > "$HOME/.npmrc"
             //registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}
@@ -54,10 +58,21 @@ jobs:
           npm publish --provenance --access public *.tgz
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - uses: actions/checkout@v3
+      - name: checkout
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          ref: ${{ steps.ref.outputs.value }}
       - name: github release
-        run: npx changelogithub
+        run: |
+          echo "${{ needs.context.outputs.changelog }}" > changelog.md
+
+          if [[ "${{ needs.context.outputs.prerelease }}" == "true" ]]; then
+            gh release create v${{ needs.context.outputs.version }} \
+              --prerelease \
+              --notes-file changelog.md
+          else
+            gh release create v${{ needs.context.outputs.version }} \
+              --notes-file changelog.md
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
