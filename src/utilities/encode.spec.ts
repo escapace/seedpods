@@ -8,10 +8,6 @@ describe('encode', () => {
       Buffer.from(JSON.stringify({ hello: 'world' }))
     )
 
-    assert.deepEqual(
-      // @ts-expect-error type
-      encode(Symbol.for('qwe')),
-      undefined
-    )
+    assert.deepEqual(encode(Symbol.for('qwe')), undefined)
   })
 })

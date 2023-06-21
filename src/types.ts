@@ -1,7 +1,3 @@
-export type JSONType =
-  | string
-  | number
-  | boolean
-  | null
-  | JSONType[]
-  | { [key: string]: JSONType }
+// TODO: https://github.com/microsoft/TypeScript/issues/1897
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type JSONType = any
