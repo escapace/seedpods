@@ -1,8 +1,8 @@
+import { canonicalize } from '@escapace/canonicalize'
 import { JSONType } from '../types'
-import { sort } from './sort'
 
 export const encode = (value: JSONType): Buffer | undefined => {
-  const v: string | undefined = JSON.stringify(sort(value))
+  const v: string | undefined = canonicalize(value)
 
   return v === undefined ? undefined : Buffer.from(v)
 }
