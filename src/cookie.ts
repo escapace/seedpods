@@ -1,15 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { isPlainObject } from 'lodash-es'
 import { from as fromAesGcm, to as toAesGcm } from './cookie-type/aes-gcm'
 import { from as fromHmac, to as toHmac } from './cookie-type/hmac'
-import { JSONType } from './types'
 import { decode } from './utilities/decode'
 import { encode } from './utilities/encode'
 import {
   CookieOptions,
   CookieOptionsParsed,
   CookieType,
+  CookieValue,
   parseCookieOptions
 } from './utilities/parse-cookie-options'
 import { toIMF } from './utilities/to-imf'
@@ -19,16 +17,16 @@ const DATE_ZERO = toIMF(new Date(0))
 export const SYMBOL_COOKIE = Symbol.for('SEEDPODS_COOKIE')
 
 export enum TypeCookieState {
-  Unset,
-  Set,
-  SetWithNonPrimaryKey,
+  Expired,
   Indecipherable,
-  Expired
+  Set,
+  SetButNeedsUpdate,
+  Unset
 }
 
 export interface CookieStateSet {
   type: TypeCookieState.Set
-  value: JSONType
+  value: unknown
 }
 
 export interface CookieStateUnset {
@@ -36,8 +34,8 @@ export interface CookieStateUnset {
 }
 
 export interface CookieStateSetWithNonPrimaryKey {
-  type: TypeCookieState.SetWithNonPrimaryKey
-  value: JSONType
+  type: TypeCookieState.SetButNeedsUpdate
+  value: unknown
 }
 
 export interface CookieStateIndecipherable {
@@ -58,10 +56,9 @@ export type CookieState =
 export interface Cookie<
   KEY extends string = any,
   TYPE extends CookieType = any,
-  VALUE extends JSONType = any
+  VALUE = any
 > {
   readonly [SYMBOL_COOKIE]: {
-    name: string
     fromString: (value: string | undefined) => Promise<CookieState>
     toString: (value: CookieState) => Promise<string | undefined>
     readonly options: CookieOptionsParsed<KEY, TYPE, VALUE>
@@ -70,72 +67,59 @@ export interface Cookie<
 
 export type Key<T> = T extends Cookie<infer KEY> ? KEY : never
 
-export const cookie = <
-  KEY extends string,
-  TYPE extends CookieType,
-  VALUE extends JSONType
->(
-  options: CookieOptions<KEY, TYPE, VALUE>
-): Cookie<KEY, TYPE, VALUE> => {
-  const cookie = parseCookieOptions(options)
-  const suffixArray: string[] = []
-  const expireSuffixArray: string[] = []
+const attributes = (
+  cookie: CookieOptionsParsed<string, CookieType, unknown>,
+  expire = false
+) => {
+  const array: string[] = []
 
-  const name =
-    cookie.prefix === undefined ? cookie.key : `${cookie.prefix}${cookie.key}`
+  if (cookie.domain !== undefined) {
+    array.push(`Domain=${cookie.domain}`)
+  }
 
-  if (cookie.secure === true) {
-    suffixArray.push('Secure')
+  if (expire) {
+    array.push(`Expires=${DATE_ZERO}`)
   }
 
   if (cookie.httpOnly === true) {
-    suffixArray.push('HttpOnly')
+    array.push('HttpOnly')
   }
 
   if (cookie.maxAge !== undefined) {
-    suffixArray.push(`Max-Age=${cookie.maxAge}`)
-  }
-
-  if (cookie.domain !== undefined) {
-    const value = `Domain=${cookie.domain}`
-
-    suffixArray.push(value)
-    expireSuffixArray.push(value)
-  }
-
-  if (cookie.sameSite !== undefined) {
-    suffixArray.push(`SameSite=${cookie.sameSite}`)
+    array.push(`Max-Age=${cookie.maxAge}`)
   }
 
   if (cookie.path !== undefined) {
-    const value = `Path=${cookie.path}`
-
-    suffixArray.push(value)
-    expireSuffixArray.push(value)
+    array.push(`Path=${cookie.path}`)
   }
 
-  if (cookie.expires?.imf !== undefined) {
-    suffixArray.push(`Expires=${cookie.expires.imf}`)
+  if (cookie.sameSite !== undefined) {
+    array.push(`SameSite=${cookie.sameSite}`)
   }
 
-  expireSuffixArray.push(`Expires=${DATE_ZERO}`)
+  if (cookie.secure === true) {
+    array.push('Secure')
+  }
 
-  const suffix = suffixArray.length === 0 ? '' : `; ${suffixArray.join('; ')}`
-  const outDeleteString =
-    expireSuffixArray.length === 0 ? '' : `; ${expireSuffixArray.join('; ')}`
+  return array.length === 0 ? '' : `; ${array.join('; ')}`
+}
+
+export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
+  options: CookieOptions<KEY, TYPE, VALUE>
+): Cookie<KEY, TYPE, VALUE> => {
+  const cookie = parseCookieOptions(options)
 
   const to = options.type === 'hmac' ? toHmac : toAesGcm
   const from = options.type === 'hmac' ? fromHmac : fromAesGcm
 
   return {
     [SYMBOL_COOKIE]: {
-      name,
       async fromString(cookieValue: string | undefined): Promise<CookieState> {
         if (cookieValue === undefined) {
           return { type: TypeCookieState.Unset }
         }
 
-        const result = await from(cookieValue, options.keys)
+        const result = await from(cookieValue, cookie.keys)
 
         const indecipherable = { type: TypeCookieState.Indecipherable as const }
 
@@ -143,17 +127,23 @@ export const cookie = <
           return indecipherable
         }
 
-        const value = decode(result.value)
+        const value: CookieValue | undefined = decode(result.value)
 
         if (value === undefined) {
           return indecipherable
         }
 
+        // This happens when we are processing cookies with the same name, yet
+        // we can still decode them. We handle it as if we couldn't decode it.
+        if (value.options.key !== cookie.key) {
+          return indecipherable
+        }
+
         return {
           type: result.rotate
-            ? TypeCookieState.SetWithNonPrimaryKey
+            ? TypeCookieState.SetButNeedsUpdate
             : TypeCookieState.Set,
-          value
+          value: value.value
         }
       },
       async toString(state: CookieState) {
@@ -161,14 +151,14 @@ export const cookie = <
           state.type === TypeCookieState.Expired ||
           state.type === TypeCookieState.Indecipherable
         ) {
-          return `${name}=${outDeleteString}`
+          return `${cookie.name}=${attributes(cookie, true)}`
         }
 
         if (
           state.type === TypeCookieState.Set ||
-          state.type === TypeCookieState.SetWithNonPrimaryKey
+          state.type === TypeCookieState.SetButNeedsUpdate
         ) {
-          const value = encode(state.value)
+          const value = encode(state.value, cookie)
 
           if (value === undefined) {
             return undefined
@@ -178,7 +168,7 @@ export const cookie = <
 
           return cookieValue === undefined
             ? undefined
-            : `${name}=${cookieValue}${suffix}`
+            : `${cookie.name}=${cookieValue}${attributes(cookie)}`
         }
 
         return undefined
@@ -190,7 +180,7 @@ export const cookie = <
 
 export function isCookie(
   cookie: unknown
-): asserts cookie is Cookie<string, CookieType, JSONType> {
+): asserts cookie is Cookie<string, CookieType, unknown> {
   if (
     !(
       isPlainObject(cookie) &&

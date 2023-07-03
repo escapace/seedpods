@@ -1,13 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { first, isEqual, isFunction, last, map } from 'lodash-es'
 import { CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
 import { JAR, Keys, SYMBOL_JAR, Value } from './jar'
 
-import { JSONType } from './types'
 import { parseCookieHeader } from './utilities/parse-cookie-header'
+
+const CookieStatePriority = [
+  TypeCookieState.Set,
+  TypeCookieState.SetButNeedsUpdate,
+  TypeCookieState.Unset,
+  TypeCookieState.Expired,
+  TypeCookieState.Indecipherable
+]
 
 type CookieHeader = string | undefined
 
-export type Reducer<T extends JSONType> = (
+export type Reducer<T> = (
   prev?: T | undefined,
   next?: T | undefined
 ) => T | undefined
@@ -24,9 +32,9 @@ interface Take<T extends JAR> {
   values: () => Promise<string[]>
 }
 
-const cookieValue = (state: CookieState): JSONType | undefined =>
+const cookieValue = (state: CookieState): any | undefined =>
   state.type === TypeCookieState.Set ||
-  state.type === TypeCookieState.SetWithNonPrimaryKey
+  state.type === TypeCookieState.SetButNeedsUpdate
     ? state.value
     : undefined
 
@@ -45,14 +53,31 @@ export const take = async <T extends JAR>(
         async (
           cookie,
           key
-        ): Promise<[string, [CookieState, ...CookieState[]]]> => [
-          key,
-          [
-            await cookie[SYMBOL_COOKIE].fromString(
-              parsedCookieHeader.get(cookie[SYMBOL_COOKIE].name)
+        ): Promise<[string, [CookieState, ...CookieState[]]]> => {
+          // there can be multiple cookies in the header
+          const name = cookie[SYMBOL_COOKIE].options.name
+          const parsedCookies: Array<string | undefined> =
+            parsedCookieHeader.get(name) ?? []
+
+          if (parsedCookies.length === 0) {
+            parsedCookies.push(undefined)
+          }
+
+          const states: CookieState[] = await Promise.all(
+            parsedCookies.map(
+              async (parsedCookie) =>
+                await cookie[SYMBOL_COOKIE].fromString(parsedCookie)
             )
-          ]
-        ]
+          )
+
+          const currentState = states.sort(
+            (a, b) =>
+              CookieStatePriority.indexOf(a.type) -
+              CookieStatePriority.indexOf(b.type)
+          )[0]
+
+          return [key, [currentState]]
+        }
       )
     )
   )
@@ -68,7 +93,7 @@ export const take = async <T extends JAR>(
 
     if (
       lastCookieState.type === TypeCookieState.Set ||
-      lastCookieState.type === TypeCookieState.SetWithNonPrimaryKey
+      lastCookieState.type === TypeCookieState.SetButNeedsUpdate
     ) {
       return lastCookieState.value
     }
@@ -88,7 +113,7 @@ export const take = async <T extends JAR>(
 
     const type: Exclude<
       TypeCookieState,
-      TypeCookieState.Set | TypeCookieState.SetWithNonPrimaryKey
+      TypeCookieState.Set | TypeCookieState.SetButNeedsUpdate
     > =
       firstCookieState.type === TypeCookieState.Indecipherable
         ? TypeCookieState.Indecipherable

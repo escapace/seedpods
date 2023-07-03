@@ -1,8 +1,31 @@
 import { canonicalize } from '@escapace/canonicalize'
-import { JSONType } from '../types'
+import {
+  CookieOptionsParsed,
+  CookieType,
+  CookieValueInput
+} from './parse-cookie-options'
 
-export const encode = (value: JSONType): Buffer | undefined => {
-  const v: string | undefined = canonicalize(value)
+export const encode = (
+  value: any,
+  options: CookieOptionsParsed<string, CookieType, unknown>
+): Buffer | undefined => {
+  if (value === undefined) {
+    return
+  }
 
-  return v === undefined ? undefined : Buffer.from(v)
+  const payload: CookieValueInput = {
+    options: {
+      key: options.key,
+      // path: options.path,
+      // domain: options.domain,
+      // secure: options.secure,
+      // httpOnly: options.httpOnly,
+      // sameSite: options.sameSite,
+      maxAge: options.maxAge
+    },
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    value
+  }
+
+  return Buffer.from(canonicalize(payload))
 }

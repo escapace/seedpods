@@ -7,7 +7,7 @@
  */
 
 export function parseCookieHeader(string?: string) {
-  const map: Map<string, string> = new Map()
+  const map: Map<string, string[]> = new Map()
 
   if (string === undefined) {
     return map
@@ -34,15 +34,21 @@ export function parseCookieHeader(string?: string) {
 
     const key = string.slice(index, eqIdx).trim()
 
-    if (!map.has(key)) {
-      let value = string.slice(eqIdx + 1, endIdx).trim()
+    // if (!map.has(key)) {
+    let value = string.slice(eqIdx + 1, endIdx).trim()
 
-      // quoted values
-      if (value.charCodeAt(0) === 0x22) {
-        value = value.slice(1, -1)
-      }
+    // quoted values
+    if (value.charCodeAt(0) === 0x22) {
+      value = value.slice(1, -1)
+    }
 
-      map.set(key, value)
+    if (map.has(key)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const array = map.get(key)!
+      array.push(value)
+    } else {
+      const array = [value]
+      map.set(key, array)
     }
 
     index = endIdx + 1
