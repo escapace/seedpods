@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { first, isEqual, isFunction, last, map } from 'lodash-es'
 import { CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
 import { JAR, Keys, SYMBOL_JAR, Value } from './jar'
+import { isEqual } from './utilities/is-equal'
 
 import { parseCookieHeader } from './utilities/parse-cookie-header'
 
@@ -48,12 +48,10 @@ export const take = async <T extends JAR>(
 
   const state: Map<string, [CookieState, ...CookieState[]]> = new Map(
     await Promise.all(
-      map(
-        cookies,
-        async (
-          cookie,
-          key
-        ): Promise<[string, [CookieState, ...CookieState[]]]> => {
+      Object.entries(cookies).map(
+        async ([key, cookie]): Promise<
+          [string, [CookieState, ...CookieState[]]]
+        > => {
           // there can be multiple cookies in the header
           const name = cookie[SYMBOL_COOKIE].options.name
           const parsedCookies: Array<string | undefined> =
@@ -89,7 +87,7 @@ export const take = async <T extends JAR>(
       throw new Error('Wrong cookie key.')
     }
 
-    const lastCookieState = last(cookieStates) as CookieState
+    const lastCookieState = cookieStates[cookieStates.length - 1]
 
     if (
       lastCookieState.type === TypeCookieState.Set ||
@@ -108,8 +106,8 @@ export const take = async <T extends JAR>(
       throw new Error('Wrong cookie key.')
     }
 
-    const firstCookieState = first(cookieStates) as CookieState
-    const lastCookieState = last(cookieStates) as CookieState
+    const firstCookieState = cookieStates[0]
+    const lastCookieState = cookieStates[cookieStates.length - 1]
 
     const type: Exclude<
       TypeCookieState,
@@ -133,14 +131,13 @@ export const take = async <T extends JAR>(
       throw new Error('Wrong cookie key.')
     }
 
-    const lastCookieState = last(cookieStates) as CookieState
+    const lastCookieState = cookieStates[cookieStates.length - 1]
     const lastCookieValue = cookieValue(lastCookieState) as Value<T, string>
 
     const reducer = reducers[key]
 
-    const nextValue = isFunction(reducer)
-      ? reducer(lastCookieValue, value)
-      : value
+    const nextValue =
+      typeof reducer === 'function' ? reducer(lastCookieValue, value) : value
 
     if (nextValue === undefined) {
       return del(key)
@@ -158,10 +155,10 @@ export const take = async <T extends JAR>(
     for (const [key, cookieStates] of state) {
       const cookie = cookies[key][SYMBOL_COOKIE]
 
-      const firstCookieState = first(cookieStates) as CookieState
+      const firstCookieState = cookieStates[0]
       const firstCookieValue = cookieValue(firstCookieState)
 
-      const lastCookieState = last(cookieStates) as CookieState
+      const lastCookieState = cookieStates[cookieStates.length - 1]
       const lastCookieValue = cookieValue(lastCookieState)
 
       const firstCookieIsSet = firstCookieState.type === TypeCookieState.Set

@@ -1,5 +1,4 @@
 import $ from '@escapace/typelevel'
-import { isPlainObject } from 'lodash-es'
 import { Cookie, isCookie, SYMBOL_COOKIE, Key } from './cookie'
 
 export const SYMBOL_JAR = Symbol.for('SEEDPODS-JAR')
@@ -145,8 +144,9 @@ Fluent<Next, 'put'> => {
 export function isJar(value: unknown): asserts value is JAR {
   if (
     !(
-      isPlainObject(value) &&
-      isPlainObject((value as Record<string | symbol, unknown>)[SYMBOL_JAR])
+      typeof value === 'object' &&
+      typeof (value as Record<string | symbol, unknown>)[SYMBOL_JAR] ===
+        'object'
     )
   ) {
     throw new Error('Not a cookie jar.')
