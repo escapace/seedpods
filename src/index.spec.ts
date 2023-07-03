@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { assert } from 'chai'
-import { cookie } from './cookie'
+import { cookie, SYMBOL_COOKIE } from './cookie'
 import { to as toAesGcm } from './cookie-type/aes-gcm'
 import { jar, SYMBOL_JAR, TypeAction } from './jar'
 import { take } from './take'
 import { deriveKey } from './utilities/derive-key'
+import { encode } from './utilities/encode'
 
 const keyA = await deriveKey('key-a', { iterations: 1 })
 const keyB = await deriveKey('key-b', { iterations: 1 })
@@ -13,10 +15,34 @@ const keyD = await deriveKey('key-d', { iterations: 1 })
 const vixen = cookie({
   key: 'vixen',
   type: 'aes-gcm',
+  name: 'vixen',
   secure: true,
   prefix: '__Secure-',
   maxAge: 86400,
   keys: [keyA, keyC]
+})
+
+const vixenTwo = cookie({
+  key: 'vixenTwo',
+  name: 'vixen',
+  type: 'aes-gcm',
+  secure: true,
+  sameSite: 'Strict',
+  path: '/two',
+  prefix: '__Secure-',
+  maxAge: 86400,
+  keys: [keyB]
+})
+
+const vixenThree = cookie({
+  key: 'vixenThree',
+  type: 'aes-gcm',
+  name: 'vixen',
+  secure: true,
+  domain: 'example.com',
+  prefix: '__Secure-',
+  maxAge: 86400,
+  keys: [keyC]
 })
 
 const tycho = cookie<'tycho', 'aes-gcm', string[]>({
@@ -32,7 +58,7 @@ const dazzle = cookie<'dazzle', 'hmac', number>({
   type: 'hmac',
   httpOnly: true,
   sameSite: 'Lax',
-  expires: new Date('2023-01-11'),
+  // expires: new Date('2023-01-11'),
   keys: [keyC, keyB]
 })
 
@@ -96,12 +122,15 @@ describe('take', () => {
   it('.', async () => {
     const cookieHeader = `__Secure-vixen=${
       (await toAesGcm(
-        Buffer.from(JSON.stringify({ change: 'triangle', author: 'escape' })),
+        encode(
+          { change: 'triangle', author: 'escape' },
+          vixen[SYMBOL_COOKIE].options
+        )!,
         [keyC]
       )) as string
     }; tycho=${
       (await toAesGcm(
-        Buffer.from(JSON.stringify(['threw', 'satellites', 'class'])),
+        encode(['threw', 'satellites', 'class'], tycho[SYMBOL_COOKIE].options)!,
         [keyB, keyA]
       )) as string
     }; __Host-ball=${Buffer.from('ride problem cause market').toString(
@@ -121,8 +150,10 @@ describe('take', () => {
     )
 
     assert.ok(
-      (await t.values()).some((value) =>
-        value.startsWith('__Host-ball=; Path=/; Expires=')
+      (await t.values()).some(
+        (value) =>
+          value ===
+          '__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure'
       )
     )
 
@@ -142,9 +173,12 @@ describe('take', () => {
     )
     assert.ok((await t.values()).some((value) => value.startsWith('tycho=')))
     assert.ok((await t.values()).some((value) => value.startsWith('dazzle=')))
+
     assert.ok(
       (await t.values()).some((value) =>
-        value.startsWith('__Host-ball=; Path=/; Expires=')
+        value.startsWith(
+          '__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure'
+        )
       )
     )
 
@@ -176,14 +210,19 @@ describe('take', () => {
         value.startsWith('__Secure-vixen=; Expires=')
       )
     )
+
     assert.ok(
       (await t.values()).some((value) =>
-        value.startsWith('tycho=; Domain=example.com; Path=/tycho; Expires=')
+        value.startsWith(
+          'tycho=; Domain=example.com; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/tycho'
+        )
       )
     )
     assert.ok(
       (await t.values()).some((value) =>
-        value.startsWith('__Host-ball=; Path=/; Expires=')
+        value.startsWith(
+          '__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure'
+        )
       )
     )
 
@@ -201,5 +240,61 @@ describe('take', () => {
 
     // @ts-expect-error type
     assert.throws(() => t.get('abc'))
+  })
+
+  it('same key cookies', () => {
+    assert.throws(() => {
+      jar()
+        .put(vixen)
+        .put(
+          cookie({
+            key: 'vixen',
+            type: 'aes-gcm',
+            secure: true,
+            prefix: '__Secure-',
+            // maxAge: 86400,
+            keys: [keyA, keyC]
+          })
+        )
+    })
+  })
+
+  it('same name cookies', async () => {
+    const jarr = jar().put(vixen).put(vixenTwo).put(vixenThree)
+
+    const cookieHeader = [
+      `__Secure-vixen=${
+        (await toAesGcm(
+          encode({ key: 'vixen' }, vixen[SYMBOL_COOKIE].options)!,
+          [keyC]
+        )) as string
+      }`,
+      'qweqweqwe=123',
+      `__Secure-vixen=${
+        (await toAesGcm(
+          encode({ key: 'vixenTwo' }, vixenTwo[SYMBOL_COOKIE].options)!,
+          [keyB]
+        )) as string
+      }`,
+      `__Secure-vixen=${
+        (await toAesGcm(
+          encode({ key: 'vixenThree' }, vixenThree[SYMBOL_COOKIE].options)!,
+          [keyC]
+        )) as string
+      }`
+    ].join('; ')
+
+    const t = await take(cookieHeader, jarr)
+
+    const values = await t.values()
+
+    assert.equal(values.length, 1)
+    assert.ok(values[0].endsWith('; Max-Age=86400; Secure'))
+
+    assert.deepEqual(await t.get('vixen'), { key: 'vixen' })
+    assert.deepEqual(await t.get('vixenTwo'), { key: 'vixenTwo' })
+    assert.deepEqual(await t.get('vixenThree'), {
+      key: 'vixenThree'
+    })
   })
 })

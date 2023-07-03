@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import $ from '@escapace/typelevel'
 import { isPlainObject } from 'lodash-es'
 import { Cookie, isCookie, SYMBOL_COOKIE, Key } from './cookie'
-import { JSONType } from './types'
 
 export const SYMBOL_JAR = Symbol.for('SEEDPODS-JAR')
 
@@ -73,7 +70,7 @@ export type Value<
   infer VALUE
 >
   ? VALUE
-  : JSONType
+  : any
 
 // export type Cast<T extends JarSymbolsk = T extends JarSymbols<
 //   Model<infer A, infer B>
@@ -107,6 +104,10 @@ const reducer = (_model: Model, action: Actions): Model => {
       isCookie(cookie)
 
       const key = cookie[SYMBOL_COOKIE].options.key
+
+      if (Object.keys(model.state.cookies).includes(key)) {
+        throw new Error(`Cookie with key '${key}' already exists.`)
+      }
 
       model.state = {
         ...model.state,
