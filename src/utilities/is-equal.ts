@@ -3,13 +3,7 @@ export type AnyObject =
   | undefined
   | Record<number | string | symbol, unknown>
 
-// export const isUndefined = (value: unknown): value is undefined =>
-//   typeof value === 'undefined'
-// export const isFunction = (value: unknown): value is Function =>
-//   typeof value === 'function'
-// export const isNull = (value: unknown): value is null => value === 'null'
-
-export const isObject = (value: unknown): value is AnyObject =>
+const isObject = (value: unknown): value is AnyObject =>
   typeof value === 'object'
 
 function equalArray(left: unknown[], right: unknown[]) {
