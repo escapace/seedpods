@@ -1,4 +1,3 @@
-import { isPlainObject } from 'lodash-es'
 import { from as fromAesGcm, to as toAesGcm } from './cookie-type/aes-gcm'
 import { from as fromHmac, to as toHmac } from './cookie-type/hmac'
 import { decode } from './utilities/decode'
@@ -183,8 +182,9 @@ export function isCookie(
 ): asserts cookie is Cookie<string, CookieType, unknown> {
   if (
     !(
-      isPlainObject(cookie) &&
-      isPlainObject((cookie as Record<string | symbol, unknown>)[SYMBOL_COOKIE])
+      typeof cookie === 'object' &&
+      typeof (cookie as Record<string | symbol, unknown>)[SYMBOL_COOKIE] ===
+        'object'
     )
   ) {
     throw new Error('Not a cookie.')
