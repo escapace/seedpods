@@ -39,7 +39,7 @@
     "lint-staged": "13.3.0",
     "lodash-es": "4.17.21",
     "mocha": "10.2.0",
-    "prettier": "2.8.8",
+    "prettier": "3.0.3",
     "prettier-config-escapace": "1.0.6",
     "secure-json-parse": "2.7.0",
     "semver": "7.5.4",
