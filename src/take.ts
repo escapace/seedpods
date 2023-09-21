@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
 import { JAR, Keys, SYMBOL_JAR, Value } from './jar'
 import { isEqual } from './utilities/is-equal'
@@ -32,7 +31,7 @@ interface Take<T extends JAR> {
   values: () => Promise<string[]>
 }
 
-const cookieValue = (state: CookieState): any | undefined =>
+const cookieValue = (state: CookieState): unknown =>
   state.type === TypeCookieState.Set ||
   state.type === TypeCookieState.SetButNeedsUpdate
     ? state.value
