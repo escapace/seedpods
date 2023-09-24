@@ -2,7 +2,10 @@
   "name": "seedpods",
   "description": "",
   "version": "0.0.0",
-  "author": "escapace <opensource@escapace.com>",
+  "author": {
+    "name": "escapace",
+    "email": "opensource@escapace.com"
+  },
   "bin": {
     "seedpods": "./lib/cli/cli.mjs"
   },
@@ -86,7 +89,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "repository": "https://github.com/escapace/seedpods.git",
+  "repository": "escapace/seedpods.git",
   "scripts": {
     "build": "node ./scripts/build.mjs",
     "lint": "ls-lint && eslint 'src/**/*.ts?(x)'",
