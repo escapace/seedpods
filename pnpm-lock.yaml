@@ -7,10 +7,10 @@ settings:
 dependencies:
   '@escapace/canonicalize':
     specifier: ^0.1.1
-    version: 0.1.1
+    version: 0.1.2
   '@escapace/typelevel':
     specifier: ^1.3.4
-    version: 1.3.4
+    version: 1.3.5
   zod:
     specifier: ^3.22.2
     version: 3.22.2
@@ -552,14 +552,14 @@ packages:
     dev: true
     optional: true
 
-  /@escapace/canonicalize@0.1.1:
-    resolution: {integrity: sha512-qOIvjycz3Ej/TYlOSz5haih3sZkRuU75NcHrkiMIjQ5bcFIRVwrKfjoK4OBXkoiur53+K+PLU750Be0ttAJHeg==, tarball: https://npm.pkg.github.com/download/@escapace/canonicalize/0.1.1/827f59f7888e44c817a8ca58df5803e612662e12}
-    engines: {node: '>=18.2.0', pnpm: '>=8.6.5'}
+  /@escapace/canonicalize@0.1.2:
+    resolution: {integrity: sha512-aZmJXMSjVpyMYAySVIvhFlU0kvR6cvyMgZZhCe+aioyC0iY9F2uOILLdjUpXcFN7M1xpv1kqq+KetyaSm+RVEA==, tarball: https://npm.pkg.github.com/download/@escapace/canonicalize/0.1.2/ee90f745cd6cdaf98ed3ae706ef9556ea72e1e6c}
+    engines: {node: '>=18.18.0', pnpm: '>=8.7.6'}
     dev: false
 
-  /@escapace/typelevel@1.3.4:
-    resolution: {integrity: sha512-H4yw0yJ0rNX1I0ZmQReydFziXsXWtR1iatlQ/462d2U363qxBHDOhEyd7OPL/sUfqIKu2+BMnkfuQgGodZp/1Q==, tarball: https://npm.pkg.github.com/download/@escapace/typelevel/1.3.4/2ca844422d7a4d97d412c81ba6d5794a528bd888}
-    engines: {node: '>= 18.15.0', pnpm: '>= 8.6.0'}
+  /@escapace/typelevel@1.3.5:
+    resolution: {integrity: sha512-h+evILRmbIlXQ+YqhEcvCtrXb5WTsOOnpLLYHoPrJqVmDUvlq7apsXvVHglodnr4e8OjD0YKXUkL92SUAJlduQ==, tarball: https://npm.pkg.github.com/download/@escapace/typelevel/1.3.5/574c3295a7a1d3b6c08f74babc92b753ff95240b}
+    engines: {node: '>=18.18.0', pnpm: '>=8.7.6'}
     dev: false
 
   /@eslint-community/eslint-utils@4.4.0(eslint@8.49.0):
@@ -710,11 +710,11 @@ packages:
   /@types/lodash-es@4.17.9:
     resolution: {integrity: sha512-ZTcmhiI3NNU7dEvWLZJkzG6ao49zOIjEgIE0RgV7wbPxU0f2xT3VSAHw2gmst8swH6V0YkLRGp4qPlX/6I90MQ==}
     dependencies:
-      '@types/lodash': 4.14.198
+      '@types/lodash': 4.14.199
     dev: true
 
-  /@types/lodash@4.14.198:
-    resolution: {integrity: sha512-trNJ/vtMZYMLhfN45uLq4ShQSw0/S7xCTLLVM+WM1rmFpba/VS42jVUgaO3w/NOLiWR/09lnYk0yMaA/atdIsg==}
+  /@types/lodash@4.14.199:
+    resolution: {integrity: sha512-Vrjz5N5Ia4SEzWWgIVwnHNEnb1UE1XMkvY5DGXrAeOGE9imk0hgTHh5GyDjLDJi9OTCn9oo9dXH1uToK1VRfrg==}
     dev: true
 
   /@types/minimist@1.2.2:
@@ -733,8 +733,8 @@ packages:
     resolution: {integrity: sha512-HksnYH4Ljr4VQgEy2lTStbCKv/P590tmPe5HqOnv9Gprffgv5WXAY+Y5Gqniu0GGqeTCUdBnzC3QSrzPkBkAMA==}
     dev: true
 
-  /@types/normalize-package-data@2.4.1:
-    resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
+  /@types/normalize-package-data@2.4.2:
+    resolution: {integrity: sha512-lqa4UEhhv/2sjjIQgjX8B+RBjj47eo0mzGasklVJ78UKGQY1r0VpB9XHDaZZO9qzEFDdy4MrXLuEaSmPrPSe/A==}
     dev: true
 
   /@types/semver@7.5.2:
@@ -2777,7 +2777,7 @@ packages:
     resolution: {integrity: sha512-Ug69mNOpfvKDAc2Q8DRpMjjzdtrnv9HcSMX+4VsZxD1aZ6ZzrIE7rlzXBtWTyhULSMKg076AW6WR5iZpD0JiOg==}
     engines: {node: '>=8'}
     dependencies:
-      '@types/normalize-package-data': 2.4.1
+      '@types/normalize-package-data': 2.4.2
       normalize-package-data: 2.5.0
       parse-json: 5.2.0
       type-fest: 0.6.0
@@ -3365,7 +3365,7 @@ packages:
       require-directory: 2.1.1
       string-width: 4.2.3
       y18n: 5.0.8
-      yargs-parser: 20.2.4
+      yargs-parser: 20.2.9
     dev: true
 
   /yargs@17.7.2:
