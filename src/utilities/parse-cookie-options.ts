@@ -221,9 +221,10 @@ export const parseCookieOptions = <
       'Encountered issues parsing options.',
       ...flattenedError.formErrors,
       ...Object.keys(flattenedError.fieldErrors).flatMap((key) => {
-        const value = flattenedError.fieldErrors[
-          key as keyof typeof flattenedError.fieldErrors
-        ] as string[]
+        const value =
+          flattenedError.fieldErrors[
+            key as keyof typeof flattenedError.fieldErrors
+          ]!
 
         return value.map((str) => `Key '${key}' - ${str.toLowerCase()}.`)
       })

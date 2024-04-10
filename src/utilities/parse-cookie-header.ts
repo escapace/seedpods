@@ -7,7 +7,7 @@
  */
 
 export function parseCookieHeader(string?: string) {
-  const map: Map<string, string[]> = new Map()
+  const map = new Map<string, string[]>()
 
   if (string === undefined) {
     return map

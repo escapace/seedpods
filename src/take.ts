@@ -45,7 +45,7 @@ export const take = async <T extends JAR>(
   const cookies = jar[SYMBOL_JAR].state.cookies
   const parsedCookieHeader = parseCookieHeader(cookieHeader)
 
-  const state: Map<string, [CookieState, ...CookieState[]]> = new Map(
+  const state = new Map<string, [CookieState, ...CookieState[]]>(
     await Promise.all(
       Object.entries(cookies).map(
         async ([key, cookie]): Promise<
@@ -115,8 +115,8 @@ export const take = async <T extends JAR>(
       firstCookieState.type === TypeCookieState.Indecipherable
         ? TypeCookieState.Indecipherable
         : firstCookieState.type === TypeCookieState.Unset
-        ? TypeCookieState.Unset
-        : TypeCookieState.Expired
+          ? TypeCookieState.Unset
+          : TypeCookieState.Expired
 
     if (lastCookieState.type !== type) {
       state.set(key, [...cookieStates, { type }])

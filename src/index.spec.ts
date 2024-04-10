@@ -120,20 +120,16 @@ describe('take', () => {
   })
 
   it('.', async () => {
-    const cookieHeader = `__Secure-vixen=${
-      (await toAesGcm(
-        encode(
-          { change: 'triangle', author: 'escape' },
-          vixen[SYMBOL_COOKIE].options
-        )!,
-        [keyC]
-      )) as string
-    }; tycho=${
-      (await toAesGcm(
-        encode(['threw', 'satellites', 'class'], tycho[SYMBOL_COOKIE].options)!,
-        [keyB, keyA]
-      )) as string
-    }; __Host-ball=${Buffer.from('ride problem cause market').toString(
+    const cookieHeader = `__Secure-vixen=${(await toAesGcm(
+      encode(
+        { change: 'triangle', author: 'escape' },
+        vixen[SYMBOL_COOKIE].options
+      )!,
+      [keyC]
+    ))!}; tycho=${(await toAesGcm(
+      encode(['threw', 'satellites', 'class'], tycho[SYMBOL_COOKIE].options)!,
+      [keyB, keyA]
+    ))!}; __Host-ball=${Buffer.from('ride problem cause market').toString(
       'base64url'
     )}; abc=qwe`
 
@@ -263,25 +259,19 @@ describe('take', () => {
     const jarr = jar().put(vixen).put(vixenTwo).put(vixenThree)
 
     const cookieHeader = [
-      `__Secure-vixen=${
-        (await toAesGcm(
-          encode({ key: 'vixen' }, vixen[SYMBOL_COOKIE].options)!,
-          [keyC]
-        )) as string
-      }`,
+      `__Secure-vixen=${(await toAesGcm(
+        encode({ key: 'vixen' }, vixen[SYMBOL_COOKIE].options)!,
+        [keyC]
+      ))!}`,
       'qweqweqwe=123',
-      `__Secure-vixen=${
-        (await toAesGcm(
-          encode({ key: 'vixenTwo' }, vixenTwo[SYMBOL_COOKIE].options)!,
-          [keyB]
-        )) as string
-      }`,
-      `__Secure-vixen=${
-        (await toAesGcm(
-          encode({ key: 'vixenThree' }, vixenThree[SYMBOL_COOKIE].options)!,
-          [keyC]
-        )) as string
-      }`
+      `__Secure-vixen=${(await toAesGcm(
+        encode({ key: 'vixenTwo' }, vixenTwo[SYMBOL_COOKIE].options)!,
+        [keyB]
+      ))!}`,
+      `__Secure-vixen=${(await toAesGcm(
+        encode({ key: 'vixenThree' }, vixenThree[SYMBOL_COOKIE].options)!,
+        [keyC]
+      ))!}`
     ].join('; ')
 
     const t = await take(cookieHeader, jarr)

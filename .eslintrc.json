@@ -1,9 +1,0 @@
-{
-  "extends": ["escapace"],
-  "parserOptions": {
-    "project": "./tsconfig.json",
-    "warnOnUnsupportedTypeScriptVersion": false
-  },
-  "root": true,
-  "rules": { "@typescript-eslint/no-explicit-any": 0 }
-}
