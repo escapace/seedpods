@@ -12,7 +12,7 @@ describe('aes-gcm', () => {
 
     const encryptedCookie = await to(cookieValue, [keyA])
 
-    const decryptedCookie = await from(encryptedCookie as string, [keyA])
+    const decryptedCookie = await from(encryptedCookie!, [keyA])
 
     assert.deepEqual(decryptedCookie, { value: cookieValue, rotate: false })
   })
@@ -22,7 +22,7 @@ describe('aes-gcm', () => {
 
     const encryptedCookie = await to(cookieValue, [keyA])
 
-    const decryptedCookie = await from(encryptedCookie as string, [keyB])
+    const decryptedCookie = await from(encryptedCookie!, [keyB])
 
     assert.equal(decryptedCookie, undefined)
   })
@@ -32,7 +32,7 @@ describe('aes-gcm', () => {
 
     const encryptedCookie = await to(cookieValue, [keyB, keyC])
 
-    const decryptedCookie = await from(encryptedCookie as string, [keyA, keyB])
+    const decryptedCookie = await from(encryptedCookie!, [keyA, keyB])
 
     assert.deepEqual(decryptedCookie, { value: cookieValue, rotate: true })
   })
@@ -49,10 +49,9 @@ describe('aes-gcm', () => {
     assert.equal(await from('.asd', [keyA]), undefined)
 
     assert.equal(
-      await from(
-        ((await to(Buffer.from('hello'), [keyA])) as string).slice(0, -1),
-        [keyA]
-      ),
+      await from((await to(Buffer.from('hello'), [keyA]))!.slice(0, -1), [
+        keyA
+      ]),
       undefined
     )
   })

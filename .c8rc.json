@@ -3,12 +3,13 @@
   "reporter": ["json", "text"],
   "exclude": [
     "**/*.d.ts",
-    "node_modules/**",
     "**/*.spec.?(m)@(j|t)s?(x)",
-    "scripts",
+    "**/eslint.config.mjs",
     "lib",
-    "src/types.ts",
-    "src/index.ts"
+    "node_modules/**",
+    "scripts",
+    "src/index.ts",
+    "src/types.ts"
   ],
   "excludeAfterRemap": true,
   "branches": 100,

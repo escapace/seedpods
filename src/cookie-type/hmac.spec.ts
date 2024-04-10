@@ -18,7 +18,7 @@ describe('hmac', () => {
       'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
     )
 
-    const unsignedCookie = await from(signedCookie as string, [
+    const unsignedCookie = await from(signedCookie!, [
       Buffer.from('chain-happy-record-blank')
     ])
 
@@ -37,7 +37,7 @@ describe('hmac', () => {
       'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
     )
 
-    const unsignedCookie = await from(signedCookie as string, [
+    const unsignedCookie = await from(signedCookie!, [
       Buffer.from('record-blank')
     ])
 
@@ -56,7 +56,7 @@ describe('hmac', () => {
       'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
     )
 
-    const unsignedCookie = await from(signedCookie as string, [
+    const unsignedCookie = await from(signedCookie!, [
       Buffer.from('desk-species-eventually-vowel'),
       Buffer.from('chain-happy-record-blank')
     ])
