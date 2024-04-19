@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { assert } from 'chai'
 import { cookie, SYMBOL_COOKIE } from './cookie'
 import { to as toAesGcm } from './cookie-type/aes-gcm'
@@ -14,61 +13,61 @@ const keyD = await deriveKey('key-d', { iterations: 1 })
 
 const vixen = cookie({
   key: 'vixen',
-  type: 'aes-gcm',
+  keys: [keyA, keyC],
+  maxAge: 86_400,
   name: 'vixen',
-  secure: true,
   prefix: '__Secure-',
-  maxAge: 86400,
-  keys: [keyA, keyC]
+  secure: true,
+  type: 'aes-gcm'
 })
 
 const vixenTwo = cookie({
   key: 'vixenTwo',
+  keys: [keyB],
+  maxAge: 86_400,
   name: 'vixen',
-  type: 'aes-gcm',
-  secure: true,
-  sameSite: 'Strict',
   path: '/two',
   prefix: '__Secure-',
-  maxAge: 86400,
-  keys: [keyB]
+  sameSite: 'Strict',
+  secure: true,
+  type: 'aes-gcm'
 })
 
 const vixenThree = cookie({
-  key: 'vixenThree',
-  type: 'aes-gcm',
-  name: 'vixen',
-  secure: true,
   domain: 'example.com',
+  key: 'vixenThree',
+  keys: [keyC],
+  maxAge: 86_400,
+  name: 'vixen',
   prefix: '__Secure-',
-  maxAge: 86400,
-  keys: [keyC]
+  secure: true,
+  type: 'aes-gcm'
 })
 
 const tycho = cookie<'tycho', 'aes-gcm', string[]>({
-  key: 'tycho',
-  type: 'aes-gcm',
   domain: 'example.com',
+  key: 'tycho',
   keys: [keyB, keyA],
-  path: '/tycho'
+  path: '/tycho',
+  type: 'aes-gcm'
 })
 
 const dazzle = cookie<'dazzle', 'hmac', number>({
-  key: 'dazzle',
-  type: 'hmac',
   httpOnly: true,
-  sameSite: 'Lax',
+  key: 'dazzle',
   // expires: new Date('2023-01-11'),
-  keys: [keyC, keyB]
+  keys: [keyC, keyB],
+  sameSite: 'Lax',
+  type: 'hmac'
 })
 
 const ball = cookie({
   key: 'ball',
-  type: 'hmac',
-  secure: true,
+  keys: [keyD],
   path: '/',
   prefix: '__Host-',
-  keys: [keyD]
+  secure: true,
+  type: 'hmac'
 })
 
 const cookieJar = jar().put(vixen).put(tycho).put(dazzle).put(ball)
@@ -81,20 +80,20 @@ describe('jar', () => {
     assert.hasAllKeys(cookieJar, ['put', SYMBOL_JAR])
 
     assert.deepStrictEqual(cookieJar[SYMBOL_JAR], {
+      log: [
+        { payload: ball, type: TypeAction.Cookie },
+        { payload: dazzle, type: TypeAction.Cookie },
+        { payload: tycho, type: TypeAction.Cookie },
+        { payload: vixen, type: TypeAction.Cookie }
+      ],
       state: {
         cookies: {
-          vixen,
-          tycho,
+          ball,
           dazzle,
-          ball
+          tycho,
+          vixen
         }
-      },
-      log: [
-        { type: TypeAction.Cookie, payload: ball },
-        { type: TypeAction.Cookie, payload: dazzle },
-        { type: TypeAction.Cookie, payload: tycho },
-        { type: TypeAction.Cookie, payload: vixen }
-      ]
+      }
     })
   })
 
@@ -122,7 +121,7 @@ describe('take', () => {
   it('.', async () => {
     const cookieHeader = `__Secure-vixen=${(await toAesGcm(
       encode(
-        { change: 'triangle', author: 'escape' },
+        { author: 'escape', change: 'triangle' },
         vixen[SYMBOL_COOKIE].options
       )!,
       [keyC]
@@ -134,8 +133,8 @@ describe('take', () => {
     )}; abc=qwe`
 
     const t = await take(cookieHeader, cookieJar, {
-      tycho(prev?: string[], next?: string[]): string[] {
-        return [...(prev ?? []), ...(next ?? [])]
+      tycho(previous?: string[], next?: string[]): string[] {
+        return [...(previous ?? []), ...(next ?? [])]
       }
     })
 
@@ -153,12 +152,12 @@ describe('take', () => {
       )
     )
 
-    assert.deepEqual(t.get('vixen'), { change: 'triangle', author: 'escape' })
+    assert.deepEqual(t.get('vixen'), { author: 'escape', change: 'triangle' })
     assert.deepEqual(t.get('tycho'), ['threw', 'satellites', 'class'])
     assert.deepEqual(t.get('dazzle'), undefined)
     assert.deepEqual(t.get('ball'), undefined)
 
-    t.set('vixen', { change: 'triangle', author: 'escape', sweet: 'silent' })
+    t.set('vixen', { author: 'escape', change: 'triangle', sweet: 'silent' })
     t.set('tycho', ['every'])
     t.set('tycho', ['plain'])
     t.set('dazzle', 100)
@@ -179,8 +178,8 @@ describe('take', () => {
     )
 
     assert.deepEqual(t.get('vixen'), {
-      change: 'triangle',
       author: 'escape',
+      change: 'triangle',
       sweet: 'silent'
     })
 
@@ -245,11 +244,11 @@ describe('take', () => {
         .put(
           cookie({
             key: 'vixen',
-            type: 'aes-gcm',
-            secure: true,
-            prefix: '__Secure-',
             // maxAge: 86400,
-            keys: [keyA, keyC]
+            keys: [keyA, keyC],
+            prefix: '__Secure-',
+            secure: true,
+            type: 'aes-gcm'
           })
         )
     })

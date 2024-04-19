@@ -12,7 +12,7 @@ export const to = async function (
   const key = await crypto.subtle.importKey(
     'raw',
     keys[keyIndex],
-    { name: 'HMAC', hash: 'SHA-256' },
+    { hash: 'SHA-256', name: 'HMAC' },
     false,
     ['sign', 'verify']
   )
@@ -35,7 +35,7 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
   const valueB64 = split[0]
 
   if (split.length !== 2) {
-    return undefined
+    return
   }
 
   const value = Buffer.from(valueB64, 'base64url')
@@ -65,8 +65,8 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
   }
 
   if (!success) {
-    return undefined
+    return
   }
 
-  return { value, rotate }
+  return { rotate, value }
 }

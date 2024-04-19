@@ -1,7 +1,7 @@
 export type AnyObject =
   | null
-  | undefined
   | Record<number | string | symbol, unknown>
+  | undefined
 
 const isObject = (value: unknown): value is AnyObject =>
   typeof value === 'object'

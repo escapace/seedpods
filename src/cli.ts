@@ -17,10 +17,10 @@ Options:
 
 try {
   const { values } = parseArgs({
-    strict: true,
     options: {
-      secret: {
-        type: 'string'
+      help: {
+        short: 'h',
+        type: 'boolean'
       },
       iterations: {
         type: 'string'
@@ -28,11 +28,11 @@ try {
       salt: {
         type: 'string'
       },
-      help: {
-        type: 'boolean',
-        short: 'h'
+      secret: {
+        type: 'string'
       }
-    }
+    },
+    strict: true
   })
 
   if (values.help === true) {
@@ -68,7 +68,7 @@ try {
     process.exit(1)
   }
 
-  const key = await deriveKey(values.secret, { salt: values.salt, iterations })
+  const key = await deriveKey(values.secret, { iterations, salt: values.salt })
 
   console.log(key.toString('base64'))
 } catch (_) {

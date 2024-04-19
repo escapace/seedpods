@@ -22,7 +22,7 @@ describe('hmac', () => {
       Buffer.from('chain-happy-record-blank')
     ])
 
-    assert.deepEqual(unsignedCookie, { value: cookieValue, rotate: false })
+    assert.deepEqual(unsignedCookie, { rotate: false, value: cookieValue })
   })
 
   it('wrong key', async () => {
@@ -61,7 +61,7 @@ describe('hmac', () => {
       Buffer.from('chain-happy-record-blank')
     ])
 
-    assert.deepEqual(unsignedCookie, { value: cookieValue, rotate: true })
+    assert.deepEqual(unsignedCookie, { rotate: true, value: cookieValue })
   })
 
   it('empty', async () => {

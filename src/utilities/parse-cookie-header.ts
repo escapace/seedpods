@@ -15,27 +15,27 @@ export function parseCookieHeader(string?: string) {
 
   let index = 0
   while (index < string.length) {
-    const eqIdx = string.indexOf('=', index)
+    const eqIndex = string.indexOf('=', index)
 
     // no more cookie pairs
-    if (eqIdx === -1) {
+    if (eqIndex === -1) {
       break
     }
 
-    let endIdx = string.indexOf(';', index)
+    let endIndex = string.indexOf(';', index)
 
-    if (endIdx === -1) {
-      endIdx = string.length
-    } else if (endIdx < eqIdx) {
+    if (endIndex === -1) {
+      endIndex = string.length
+    } else if (endIndex < eqIndex) {
       // backtrack on prior semicolon
-      index = string.lastIndexOf(';', eqIdx - 1) + 1
+      index = string.lastIndexOf(';', eqIndex - 1) + 1
       continue
     }
 
-    const key = string.slice(index, eqIdx).trim()
+    const key = string.slice(index, eqIndex).trim()
 
     // if (!map.has(key)) {
-    let value = string.slice(eqIdx + 1, endIdx).trim()
+    let value = string.slice(eqIndex + 1, endIndex).trim()
 
     // quoted values
     if (value.charCodeAt(0) === 0x22) {
@@ -43,7 +43,6 @@ export function parseCookieHeader(string?: string) {
     }
 
     if (map.has(key)) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const array = map.get(key)!
       array.push(value)
     } else {
@@ -51,7 +50,7 @@ export function parseCookieHeader(string?: string) {
       map.set(key, array)
     }
 
-    index = endIdx + 1
+    index = endIndex + 1
   }
 
   return map

@@ -6,6 +6,10 @@
  *
  */
 
+function dtPad(v: string, lPad = 2): string {
+  return v.padStart(lPad, '0')
+}
+
 /**
  * Parse a date to return a IMF formatted string date
  * RFC: https://tools.ietf.org/html/rfc7231#section-7.1.1.1
@@ -16,9 +20,6 @@
  * @return IMF date formatted string
  */
 export function toIMF(date: Date): string {
-  function dtPad(v: string, lPad = 2): string {
-    return v.padStart(lPad, '0')
-  }
   const d = dtPad(date.getUTCDate().toString())
   const h = dtPad(date.getUTCHours().toString())
   const min = dtPad(date.getUTCMinutes().toString())

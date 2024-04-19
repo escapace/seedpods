@@ -16,7 +16,7 @@ export const to = async (
   // https://developer.mozilla.org/en-US/docs/Web/API/AesGcmParams
   const iv = Buffer.from(crypto.getRandomValues(new Uint8Array(12)))
   const cipher = Buffer.from(
-    await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, buffer)
+    await crypto.subtle.encrypt({ iv, name: 'AES-GCM' }, key, buffer)
   )
 
   return cipher.toString('base64url') + '.' + iv.toString('base64url')
@@ -26,7 +26,7 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
   const split = cookieValue.split('.')
 
   if (split.length !== 2) {
-    return undefined
+    return
   }
 
   const [ciperB64, ivB64] = split
@@ -49,20 +49,20 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
 
     try {
       value = Buffer.from(
-        await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher)
+        await crypto.subtle.decrypt({ iv, name: 'AES-GCM' }, key, cipher)
       )
 
       rotate = index > 0
       success = true
       break outer
-    } catch (e) {
+    } catch (error) {
       continue
     }
   }
 
   if (success && value !== undefined) {
-    return { value, rotate }
+    return { rotate, value }
   }
 
-  return undefined
+  return
 }

@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import z from 'zod'
 
-// eslint-disable-next-line no-useless-escape
-const FIELD_CONTENT_REGEXP = /^(?=[\x20-\x7E]*$)[^()@<>,;:\\"\[\]?={}\s]+$/
+const FIELD_CONTENT_REGEXP = /^(?=[\x20-\x7E]*$)[^\s"(),:;<=>?@[\\\]{}]+$/
 
 const jsonSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -48,39 +47,13 @@ const baseOptionsSchema = sharedOptionsSchema.extend({
       { message: 'Invalid first/last char in cookie domain' }
     )
     .optional(),
-  path: z
-    .string()
-    .min(1)
-    .refine(
-      (value) => {
-        for (let i = 0; i < value.length; i++) {
-          const c = value.charAt(i)
-          if (
-            c < String.fromCharCode(0x20) ||
-            c > String.fromCharCode(0x7e) ||
-            c === ';'
-          ) {
-            return false
-          }
-        }
-
-        return true
-      },
-      { message: 'Invalid cookie path character' }
-    )
-    .optional(),
-  secure: z.boolean().optional(),
   httpOnly: z.boolean().optional(),
-  sameSite: z.enum(['Strict', 'Lax', 'None']).optional(),
   key: z
     .string()
     .min(1)
-    .refine(
-      (value) => {
-        return FIELD_CONTENT_REGEXP.test(value)
-      },
-      { message: 'Invalid cookie key' }
-    ),
+    .refine((value) => FIELD_CONTENT_REGEXP.test(value), {
+      message: 'Invalid cookie key'
+    }),
   name: z
     .string()
     .optional()
@@ -97,18 +70,40 @@ const baseOptionsSchema = sharedOptionsSchema.extend({
       },
       { message: 'Invalid cookie key' }
     ),
+  path: z
+    .string()
+    .min(1)
+    .refine(
+      (value) => {
+        for (let index = 0; index < value.length; index++) {
+          const c = value.charAt(index)
+          if (
+            c < String.fromCharCode(0x20) ||
+            c > String.fromCharCode(0x7e) ||
+            c === ';'
+          ) {
+            return false
+          }
+        }
+
+        return true
+      },
+      { message: 'Invalid cookie path character' }
+    )
+    .optional(),
+  //   .optional(),
+  prefix: z.literal('__Secure-').or(z.literal('__Host-')).optional(),
+  sameSite: z.enum(['Strict', 'Lax', 'None']).optional(),
   // expires: z
   //   .date()
   //   .transform((date) => ({ imf: toIMF(date), date }))
-  //   .optional(),
-  prefix: z.literal('__Secure-').or(z.literal('__Host-')).optional()
+  secure: z.boolean().optional()
 })
 
 const cookieOptionsSchema = z
   .discriminatedUnion('type', [
     baseOptionsSchema
       .extend({
-        type: z.literal('aes-gcm'),
         keys: z
           .array(
             z
@@ -121,12 +116,12 @@ const cookieOptionsSchema = z
               })
           )
           .nonempty()
-          .max(5)
+          .max(5),
+        type: z.literal('aes-gcm')
       })
       .strict(),
     baseOptionsSchema
       .extend({
-        type: z.literal('hmac'),
         keys: z
           .array(
             z
@@ -136,7 +131,8 @@ const cookieOptionsSchema = z
               )
           )
           .nonempty()
-          .max(5)
+          .max(5),
+        type: z.literal('hmac')
       })
       .strict()
   ])
@@ -186,19 +182,19 @@ export type CookieOptions<
   KEY extends string,
   TYPE extends CookieType,
   _VALUE
-> = Omit<ZodInputCookieOptionsSchema, 'key' | 'type'> & {
+> = {
   key: KEY
   type: TYPE
-}
+} & Omit<ZodInputCookieOptionsSchema, 'key' | 'type'>
 
 export type CookieOptionsParsed<
   KEY extends string,
   TYPE extends CookieType,
   _VALUE
-> = Omit<ZodOutputCookieOptionsSchema, 'key' | 'type'> & {
+> = {
   key: KEY
   type: TYPE
-}
+} & Omit<ZodOutputCookieOptionsSchema, 'key' | 'type'>
 
 export const parseCookieOptions = <
   KEY extends string,
@@ -213,10 +209,10 @@ export const parseCookieOptions = <
     return result.data as CookieOptionsParsed<KEY, TYPE, _VALUE>
   }
 
-  const err = result.error
+  const error = result.error
 
-  if (err instanceof z.ZodError) {
-    const flattenedError = err.flatten()
+  if (error instanceof z.ZodError) {
+    const flattenedError = error.flatten()
     const message = [
       'Encountered issues parsing options.',
       ...flattenedError.formErrors,
@@ -226,13 +222,15 @@ export const parseCookieOptions = <
             key as keyof typeof flattenedError.fieldErrors
           ]!
 
-        return value.map((str) => `Key '${key}' - ${str.toLowerCase()}.`)
+        return value.map(
+          (string_) => `Key '${key}' - ${string_.toLowerCase()}.`
+        )
       })
     ].join(' ')
 
     throw new Error(message)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-throw-literal
-  throw err
+  // eslint-disable-next-line @typescript-eslint/only-throw-error
+  throw error
 }
