@@ -1,5 +1,5 @@
-import { CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
-import { JAR, Keys, SYMBOL_JAR, Value } from './jar'
+import { type CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
+import { type JAR, type Keys, SYMBOL_JAR, type Value } from './jar'
 import { isEqual } from './utilities/is-equal'
 
 import { parseCookieHeader } from './utilities/parse-cookie-header'
@@ -15,7 +15,7 @@ const CookieStatePriority = [
 type CookieHeader = string | undefined
 
 export type Reducer<T> = (
-  prev?: T | undefined,
+  previous?: T | undefined,
   next?: T | undefined
 ) => T | undefined
 
@@ -24,10 +24,10 @@ type Reducers<T extends JAR> = {
 }
 
 interface Take<T extends JAR> {
-  get: <U extends Keys<T>>(key: U) => undefined | Value<T, U>
-  set: <U extends Keys<T>>(key: U, value: Value<T, U> | undefined) => void
   del: (key: Keys<T>) => void
   entries: () => Promise<Array<[Keys<T>, string]>>
+  get: <U extends Keys<T>>(key: U) => undefined | Value<T, U>
+  set: <U extends Keys<T>>(key: U, value: undefined | Value<T, U>) => void
   values: () => Promise<string[]>
 }
 
@@ -95,7 +95,7 @@ export const take = async <T extends JAR>(
       return lastCookieState.value
     }
 
-    return undefined
+    return
   }
 
   const del = (key: string) => {
@@ -123,7 +123,7 @@ export const take = async <T extends JAR>(
     }
   }
 
-  const set = (key: string, value: Value<T, string> | undefined): void => {
+  const set = (key: string, value: undefined | Value<T, string>): void => {
     const cookieStates = state.get(key)
 
     if (cookieStates === undefined) {
@@ -173,19 +173,15 @@ export const take = async <T extends JAR>(
         promises.push(
           cookie
             .toString(lastCookieState)
-            .then((value): undefined | [string, string] => {
-              if (typeof value === 'undefined') {
-                return undefined
-              } else {
-                return [key, value]
-              }
-            })
+            .then((value): [string, string] | undefined =>
+              value === undefined ? undefined : [key, value]
+            )
         )
       }
     }
 
     return (await Promise.all(promises)).filter(
-      (value): value is [string, string] => typeof value !== 'undefined'
+      (value): value is [string, string] => value !== undefined
     )
   }
 
@@ -194,10 +190,10 @@ export const take = async <T extends JAR>(
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
-    get,
-    set,
     del,
     entries,
+    get,
+    set,
     values
   } as Take<T>
 }

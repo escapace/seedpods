@@ -12,8 +12,8 @@
  * @param value Cookie value.
  */
 export function validateCookieValue(value: string): boolean {
-  for (let i = 0; i < value.length; i++) {
-    const c = value.charAt(i)
+  for (let index = 0; index < value.length; index++) {
+    const c = value.charAt(index)
 
     if (
       c < String.fromCharCode(0x21) ||

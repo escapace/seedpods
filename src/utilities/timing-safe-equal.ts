@@ -3,12 +3,12 @@ export function timingSafeEqual(a: Buffer, b: Buffer) {
     throw new TypeError('Input buffers must have the same length')
   }
 
-  const len = a.length
+  const length = a.length
   let out = 0
-  let i = -1
+  let index = -1
 
-  while (++i < len) {
-    out |= a[i] ^ b[i]
+  while (++index < length) {
+    out |= a[index] ^ b[index]
   }
 
   return out === 0

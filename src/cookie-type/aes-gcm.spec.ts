@@ -14,7 +14,7 @@ describe('aes-gcm', () => {
 
     const decryptedCookie = await from(encryptedCookie!, [keyA])
 
-    assert.deepEqual(decryptedCookie, { value: cookieValue, rotate: false })
+    assert.deepEqual(decryptedCookie, { rotate: false, value: cookieValue })
   })
 
   it('wrong key', async () => {
@@ -34,7 +34,7 @@ describe('aes-gcm', () => {
 
     const decryptedCookie = await from(encryptedCookie!, [keyA, keyB])
 
-    assert.deepEqual(decryptedCookie, { value: cookieValue, rotate: true })
+    assert.deepEqual(decryptedCookie, { rotate: true, value: cookieValue })
   })
 
   it('empty', async () => {

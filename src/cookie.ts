@@ -3,10 +3,10 @@ import { from as fromHmac, to as toHmac } from './cookie-type/hmac'
 import { decode } from './utilities/decode'
 import { encode } from './utilities/encode'
 import {
-  CookieOptions,
-  CookieOptionsParsed,
-  CookieType,
-  CookieValue,
+  type CookieOptions,
+  type CookieOptionsParsed,
+  type CookieType,
+  type CookieValue,
   parseCookieOptions
 } from './utilities/parse-cookie-options'
 import { toIMF } from './utilities/to-imf'
@@ -46,11 +46,11 @@ export interface CookieStateExpired {
 }
 
 export type CookieState =
-  | CookieStateSet
-  | CookieStateUnset
-  | CookieStateSetWithNonPrimaryKey
-  | CookieStateIndecipherable
   | CookieStateExpired
+  | CookieStateIndecipherable
+  | CookieStateSet
+  | CookieStateSetWithNonPrimaryKey
+  | CookieStateUnset
 
 export interface Cookie<
   KEY extends string = any,
@@ -59,8 +59,8 @@ export interface Cookie<
 > {
   readonly [SYMBOL_COOKIE]: {
     fromString: (value: string | undefined) => Promise<CookieState>
-    toString: (value: CookieState) => Promise<string | undefined>
     readonly options: CookieOptionsParsed<KEY, TYPE, VALUE>
+    toString: (value: CookieState) => Promise<string | undefined>
   }
 }
 
@@ -145,6 +145,7 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
           value: value.value
         }
       },
+      options: cookie,
       async toString(state: CookieState) {
         if (
           state.type === TypeCookieState.Expired ||
@@ -160,7 +161,7 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
           const value = encode(state.value, cookie)
 
           if (value === undefined) {
-            return undefined
+            return
           }
 
           const cookieValue = await to(value, options.keys)
@@ -170,9 +171,8 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
             : `${cookie.name}=${cookieValue}${attributes(cookie)}`
         }
 
-        return undefined
-      },
-      options: cookie
+        return
+      }
     }
   }
 }
@@ -187,6 +187,6 @@ export function isCookie(
         'object'
     )
   ) {
-    throw new Error('Not a cookie.')
+    throw new TypeError('Not a cookie.')
   }
 }

@@ -1,5 +1,5 @@
 import { canonicalize } from '@escapace/canonicalize'
-import {
+import type {
   CookieOptionsParsed,
   CookieType,
   CookieValueInput

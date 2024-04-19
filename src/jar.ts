@@ -1,5 +1,5 @@
-import $ from '@escapace/typelevel'
-import { Cookie, isCookie, SYMBOL_COOKIE, Key } from './cookie'
+import type $ from '@escapace/typelevel'
+import { type Cookie, isCookie, SYMBOL_COOKIE, type Key } from './cookie'
 
 export const SYMBOL_JAR = Symbol.for('SEEDPODS-JAR')
 
@@ -11,8 +11,8 @@ export enum TypeAction {
 // export type PlaceholderState<T extends Placeholder = Placeholder> = T
 
 export interface ActionCookie<T extends Cookie = Cookie> {
-  type: TypeAction.Cookie
   payload: T
+  type: TypeAction.Cookie
 }
 
 export type Actions = ActionCookie
@@ -22,7 +22,6 @@ export interface State {
 }
 
 export interface InitialState {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   cookies: {}
 }
 
@@ -31,7 +30,7 @@ export interface Model<T extends Actions[] = any[], U extends State = State> {
   state: U
 }
 
-export type Fluent<T, K extends string | number | symbol> = {
+export type Fluent<T, K extends number | string | symbol> = {
   [P in Extract<keyof T, K>]: T[P]
 }
 
@@ -61,16 +60,14 @@ export type Next<
 
 export type Keys<T extends JAR> = keyof T[typeof SYMBOL_JAR]['state']['cookies']
 
-export type Value<
-  T extends JAR,
-  U extends Keys<T>
-> = T[typeof SYMBOL_JAR]['state']['cookies'][U] extends Cookie<
-  any,
-  any,
-  infer VALUE
->
-  ? VALUE
-  : any
+export type Value<T extends JAR, U extends Keys<T>> =
+  T[typeof SYMBOL_JAR]['state']['cookies'][U] extends Cookie<
+    any,
+    any,
+    infer VALUE
+  >
+    ? VALUE
+    : any
 
 // export type Cast<T extends JarSymbolsk = T extends JarSymbols<
 //   Model<infer A, infer B>
@@ -90,11 +87,11 @@ export interface Jar<T extends Model> extends JAR<T> {
 
 const reducer = (_model: Model, action: Actions): Model => {
   const model: Model = {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    log: [action, ..._model.log],
     state: {
       ..._model.state
-    },
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    log: [action, ..._model.log]
+    }
   }
 
   switch (action.type) {
@@ -126,21 +123,17 @@ const reducer = (_model: Model, action: Actions): Model => {
 
 const put = (model: Model) => (cookie: Cookie) => {
   const next = reducer(model, {
-    type: TypeAction.Cookie,
-    payload: cookie
+    payload: cookie,
+    type: TypeAction.Cookie
   })
 
   return { put: put(next), [SYMBOL_JAR]: next }
 }
 
 export const jar = (): // model: Model = { state: { cookies: {} }, log: [] }
-Fluent<Next, 'put'> => {
+Fluent<Next, 'put'> =>
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return { put: put({ state: { cookies: {} }, log: [] }) } as Fluent<
-    Next,
-    'put'
-  >
-}
+  ({ put: put({ log: [], state: { cookies: {} } }) }) as Fluent<Next, 'put'>
 
 export function isJar(value: unknown): asserts value is JAR {
   if (
@@ -150,6 +143,6 @@ export function isJar(value: unknown): asserts value is JAR {
         'object'
     )
   ) {
-    throw new Error('Not a cookie jar.')
+    throw new TypeError('Not a cookie jar.')
   }
 }

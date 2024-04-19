@@ -25,13 +25,13 @@ describe('parse-cookie-header', () => {
 
   it('should ignore OWS', () => {
     assert.deepEqual(parse('FOO    = bar;   baz  =   raz'), {
-      FOO: ['bar'],
-      baz: ['raz']
+      baz: ['raz'],
+      FOO: ['bar']
     })
   })
 
   it('should parse cookie with empty value', () => {
-    assert.deepEqual(parse('foo= ; bar='), { foo: [''], bar: [''] })
+    assert.deepEqual(parse('foo= ; bar='), { bar: [''], foo: [''] })
   })
 
   it('should ignore cookies without value', () => {
@@ -41,16 +41,16 @@ describe('parse-cookie-header', () => {
 
   it('should ignore duplicate cookies', () => {
     assert.deepEqual(parse('foo=%1;bar=bar;foo=boo'), {
-      foo: ['%1', 'boo'],
-      bar: ['bar']
+      bar: ['bar'],
+      foo: ['%1', 'boo']
     })
     assert.deepEqual(parse('foo=false;bar=bar;foo=true'), {
-      foo: ['false', 'true'],
-      bar: ['bar']
+      bar: ['bar'],
+      foo: ['false', 'true']
     })
     assert.deepEqual(parse('foo=;bar=bar;foo=boo'), {
-      foo: ['', 'boo'],
-      bar: ['bar']
+      bar: ['bar'],
+      foo: ['', 'boo']
     })
   })
 })
