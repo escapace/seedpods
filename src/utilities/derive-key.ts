@@ -1,19 +1,16 @@
-export interface DeriveOptions {
+interface DeriveOptions {
   iterations?: number
   length?: number
   salt?: string
 }
 
-export const deriveKey = async (
-  secret: string,
-  options?: DeriveOptions
-): Promise<Buffer> => {
+export const deriveKey = async (secret: string, options?: DeriveOptions): Promise<Buffer> => {
   const passphraseKey = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),
     'PBKDF2',
     false,
-    ['deriveKey', 'deriveBits']
+    ['deriveKey', 'deriveBits'],
   )
 
   const key = await crypto.subtle.deriveKey(
@@ -24,15 +21,15 @@ export const deriveKey = async (
       salt:
         typeof options?.salt === 'string'
           ? Buffer.from(options.salt)
-          : crypto.getRandomValues(new Uint8Array(32))
+          : crypto.getRandomValues(new Uint8Array(32)),
     },
     passphraseKey,
     {
       length: 256,
-      name: 'AES-GCM'
+      name: 'AES-GCM',
     },
     true,
-    ['encrypt', 'decrypt']
+    ['encrypt', 'decrypt'],
   )
 
   const buffer = Buffer.from(await crypto.subtle.exportKey('raw', key))

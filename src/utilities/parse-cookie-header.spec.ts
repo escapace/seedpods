@@ -6,11 +6,10 @@
  *
  */
 
-import { assert } from 'chai'
+import { assert, describe, it } from 'vitest'
 import { parseCookieHeader } from './parse-cookie-header'
 
-const parse = (value?: string) =>
-  Object.fromEntries(parseCookieHeader(value).entries())
+const parse = (value?: string) => Object.fromEntries(parseCookieHeader(value).entries())
 
 describe('parse-cookie-header', () => {
   it('.', () => {
@@ -26,7 +25,7 @@ describe('parse-cookie-header', () => {
   it('should ignore OWS', () => {
     assert.deepEqual(parse('FOO    = bar;   baz  =   raz'), {
       baz: ['raz'],
-      FOO: ['bar']
+      FOO: ['bar'],
     })
   })
 
@@ -42,15 +41,15 @@ describe('parse-cookie-header', () => {
   it('should ignore duplicate cookies', () => {
     assert.deepEqual(parse('foo=%1;bar=bar;foo=boo'), {
       bar: ['bar'],
-      foo: ['%1', 'boo']
+      foo: ['%1', 'boo'],
     })
     assert.deepEqual(parse('foo=false;bar=bar;foo=true'), {
       bar: ['bar'],
-      foo: ['false', 'true']
+      foo: ['false', 'true'],
     })
     assert.deepEqual(parse('foo=;bar=bar;foo=boo'), {
       bar: ['bar'],
-      foo: ['', 'boo']
+      foo: ['', 'boo'],
     })
   })
 })

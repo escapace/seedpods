@@ -1,8 +1,7 @@
-import { assert } from 'chai'
+import { assert, describe, it } from 'vitest'
 import { validateCookieValue } from './validate-cookie-value'
 
-const ALPHABET =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
 
 describe('validate-cookie-value', () => {
   it('.', () => {
@@ -19,7 +18,7 @@ describe('validate-cookie-value', () => {
       '1f"Wa',
       '"',
       '1fWa\u0005',
-      '1f\u0091Wa'
+      '1f\u0091Wa',
     ]
 
     assert.isEmpty(tokens.filter((value) => validateCookieValue(value)))

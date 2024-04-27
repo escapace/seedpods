@@ -1,4 +1,5 @@
-import { assert } from 'chai'
+/* eslint-disable typescript/no-non-null-assertion */
+import { assert, describe, it } from 'vitest'
 import { deriveKey } from '../utilities/derive-key'
 import { from, to } from './aes-gcm'
 
@@ -49,10 +50,8 @@ describe('aes-gcm', () => {
     assert.equal(await from('.asd', [keyA]), undefined)
 
     assert.equal(
-      await from((await to(Buffer.from('hello'), [keyA]))!.slice(0, -1), [
-        keyA
-      ]),
-      undefined
+      await from((await to(Buffer.from('hello'), [keyA]))!.slice(0, -1), [keyA]),
+      undefined,
     )
   })
 })

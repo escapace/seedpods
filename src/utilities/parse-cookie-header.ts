@@ -43,6 +43,7 @@ export function parseCookieHeader(string?: string) {
     }
 
     if (map.has(key)) {
+      // eslint-disable-next-line typescript/no-non-null-assertion
       const array = map.get(key)!
       array.push(value)
     } else {

@@ -3,11 +3,11 @@ import { from as fromHmac, to as toHmac } from './cookie-type/hmac'
 import { decode } from './utilities/decode'
 import { encode } from './utilities/encode'
 import {
+  parseCookieOptions,
   type CookieOptions,
   type CookieOptionsParsed,
   type CookieType,
   type CookieValue,
-  parseCookieOptions
 } from './utilities/parse-cookie-options'
 import { toIMF } from './utilities/to-imf'
 
@@ -20,28 +20,28 @@ export enum TypeCookieState {
   Indecipherable,
   Set,
   SetButNeedsUpdate,
-  Unset
+  Unset,
 }
 
-export interface CookieStateSet {
+interface CookieStateSet {
   type: TypeCookieState.Set
   value: unknown
 }
 
-export interface CookieStateUnset {
+interface CookieStateUnset {
   type: TypeCookieState.Unset
 }
 
-export interface CookieStateSetWithNonPrimaryKey {
+interface CookieStateSetWithNonPrimaryKey {
   type: TypeCookieState.SetButNeedsUpdate
   value: unknown
 }
 
-export interface CookieStateIndecipherable {
+interface CookieStateIndecipherable {
   type: TypeCookieState.Indecipherable
 }
 
-export interface CookieStateExpired {
+interface CookieStateExpired {
   type: TypeCookieState.Expired
 }
 
@@ -53,9 +53,12 @@ export type CookieState =
   | CookieStateUnset
 
 export interface Cookie<
+  // eslint-disable-next-line typescript/no-explicit-any
   KEY extends string = any,
+  // eslint-disable-next-line typescript/no-explicit-any
   TYPE extends CookieType = any,
-  VALUE = any
+  // eslint-disable-next-line typescript/no-explicit-any
+  VALUE = any,
 > {
   readonly [SYMBOL_COOKIE]: {
     fromString: (value: string | undefined) => Promise<CookieState>
@@ -66,10 +69,7 @@ export interface Cookie<
 
 export type Key<T> = T extends Cookie<infer KEY> ? KEY : never
 
-const attributes = (
-  cookie: CookieOptionsParsed<string, CookieType, unknown>,
-  expire = false
-) => {
+const attributes = (cookie: CookieOptionsParsed<string, CookieType, unknown>, expire = false) => {
   const array: string[] = []
 
   if (cookie.domain !== undefined) {
@@ -104,7 +104,7 @@ const attributes = (
 }
 
 export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
-  options: CookieOptions<KEY, TYPE, VALUE>
+  options: CookieOptions<KEY, TYPE, VALUE>,
 ): Cookie<KEY, TYPE, VALUE> => {
   const cookie = parseCookieOptions(options)
 
@@ -139,10 +139,8 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
         }
 
         return {
-          type: result.rotate
-            ? TypeCookieState.SetButNeedsUpdate
-            : TypeCookieState.Set,
-          value: value.value
+          type: result.rotate ? TypeCookieState.SetButNeedsUpdate : TypeCookieState.Set,
+          value: value.value,
         }
       },
       options: cookie,
@@ -172,19 +170,16 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
         }
 
         return
-      }
-    }
+      },
+    },
   }
 }
 
-export function isCookie(
-  cookie: unknown
-): asserts cookie is Cookie<string, CookieType, unknown> {
+export function isCookie(cookie: unknown): asserts cookie is Cookie<string, CookieType, unknown> {
   if (
     !(
       typeof cookie === 'object' &&
-      typeof (cookie as Record<string | symbol, unknown>)[SYMBOL_COOKIE] ===
-        'object'
+      typeof (cookie as Record<string | symbol, unknown>)[SYMBOL_COOKIE] === 'object'
     )
   ) {
     throw new TypeError('Not a cookie.')

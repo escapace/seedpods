@@ -9,15 +9,12 @@ const CookieStatePriority = [
   TypeCookieState.SetButNeedsUpdate,
   TypeCookieState.Unset,
   TypeCookieState.Expired,
-  TypeCookieState.Indecipherable
+  TypeCookieState.Indecipherable,
 ]
 
 type CookieHeader = string | undefined
 
-export type Reducer<T> = (
-  previous?: T | undefined,
-  next?: T | undefined
-) => T | undefined
+type Reducer<T> = (previous?: T | undefined, next?: T | undefined) => T | undefined
 
 type Reducers<T extends JAR> = {
   [P in Keys<T>]?: Reducer<Value<T, P>> | undefined
@@ -32,15 +29,14 @@ interface Take<T extends JAR> {
 }
 
 const cookieValue = (state: CookieState): unknown =>
-  state.type === TypeCookieState.Set ||
-  state.type === TypeCookieState.SetButNeedsUpdate
+  state.type === TypeCookieState.Set || state.type === TypeCookieState.SetButNeedsUpdate
     ? state.value
     : undefined
 
 export const take = async <T extends JAR>(
   cookieHeader: CookieHeader | undefined,
   jar: T,
-  reducers: Reducers<T> = {}
+  reducers: Reducers<T> = {},
 ): Promise<Take<T>> => {
   const cookies = jar[SYMBOL_JAR].state.cookies
   const parsedCookieHeader = parseCookieHeader(cookieHeader)
@@ -48,13 +44,10 @@ export const take = async <T extends JAR>(
   const state = new Map<string, [CookieState, ...CookieState[]]>(
     await Promise.all(
       Object.entries(cookies).map(
-        async ([key, cookie]): Promise<
-          [string, [CookieState, ...CookieState[]]]
-        > => {
+        async ([key, cookie]): Promise<[string, [CookieState, ...CookieState[]]]> => {
           // there can be multiple cookies in the header
           const name = cookie[SYMBOL_COOKIE].options.name
-          const parsedCookies: Array<string | undefined> =
-            parsedCookieHeader.get(name) ?? []
+          const parsedCookies: Array<string | undefined> = parsedCookieHeader.get(name) ?? []
 
           if (parsedCookies.length === 0) {
             parsedCookies.push(undefined)
@@ -62,21 +55,18 @@ export const take = async <T extends JAR>(
 
           const states: CookieState[] = await Promise.all(
             parsedCookies.map(
-              async (parsedCookie) =>
-                await cookie[SYMBOL_COOKIE].fromString(parsedCookie)
-            )
+              async (parsedCookie) => await cookie[SYMBOL_COOKIE].fromString(parsedCookie),
+            ),
           )
 
           const currentState = states.sort(
-            (a, b) =>
-              CookieStatePriority.indexOf(a.type) -
-              CookieStatePriority.indexOf(b.type)
+            (a, b) => CookieStatePriority.indexOf(a.type) - CookieStatePriority.indexOf(b.type),
           )[0]
 
           return [key, [currentState]]
-        }
-      )
-    )
+        },
+      ),
+    ),
   )
 
   const get = (key: string) => {
@@ -108,10 +98,7 @@ export const take = async <T extends JAR>(
     const firstCookieState = cookieStates[0]
     const lastCookieState = cookieStates[cookieStates.length - 1]
 
-    const type: Exclude<
-      TypeCookieState,
-      TypeCookieState.Set | TypeCookieState.SetButNeedsUpdate
-    > =
+    const type: Exclude<TypeCookieState, TypeCookieState.Set | TypeCookieState.SetButNeedsUpdate> =
       firstCookieState.type === TypeCookieState.Indecipherable
         ? TypeCookieState.Indecipherable
         : firstCookieState.type === TypeCookieState.Unset
@@ -135,17 +122,13 @@ export const take = async <T extends JAR>(
 
     const reducer = reducers[key]
 
-    const nextValue =
-      typeof reducer === 'function' ? reducer(lastCookieValue, value) : value
+    const nextValue = typeof reducer === 'function' ? reducer(lastCookieValue, value) : value
 
     if (nextValue === undefined) {
       return del(key)
     }
 
-    state.set(key, [
-      ...cookieStates,
-      { type: TypeCookieState.Set, value: nextValue }
-    ])
+    state.set(key, [...cookieStates, { type: TypeCookieState.Set, value: nextValue }])
   }
 
   const entries = async (): Promise<Array<[string, string]>> => {
@@ -163,37 +146,30 @@ export const take = async <T extends JAR>(
       const firstCookieIsSet = firstCookieState.type === TypeCookieState.Set
       const lastCookieIsSet = lastCookieState.type === TypeCookieState.Set
 
-      if (
-        !(
-          firstCookieIsSet &&
-          lastCookieIsSet &&
-          isEqual(firstCookieValue, lastCookieValue)
-        )
-      ) {
+      if (!(firstCookieIsSet && lastCookieIsSet && isEqual(firstCookieValue, lastCookieValue))) {
         promises.push(
           cookie
             .toString(lastCookieState)
             .then((value): [string, string] | undefined =>
-              value === undefined ? undefined : [key, value]
-            )
+              value === undefined ? undefined : [key, value],
+            ),
         )
       }
     }
 
     return (await Promise.all(promises)).filter(
-      (value): value is [string, string] => value !== undefined
+      (value): value is [string, string] => value !== undefined,
     )
   }
 
-  const values = async (): Promise<string[]> =>
-    (await entries()).map(([_, value]) => value)
+  const values = async (): Promise<string[]> => (await entries()).map(([_, value]) => value)
 
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  // eslint-disable-next-line typescript/consistent-type-assertions
   return {
     del,
     entries,
     get,
     set,
-    values
+    values,
   } as Take<T>
 }

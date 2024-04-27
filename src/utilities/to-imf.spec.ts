@@ -1,5 +1,5 @@
 import { toIMF } from './to-imf'
-import { assert } from 'chai'
+import { assert, describe, it } from 'vitest'
 
 describe('to-imf', () => {
   it('to IMF', () => {

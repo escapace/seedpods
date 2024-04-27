@@ -9,7 +9,7 @@
 /**
  * Validate Cookie Value.
  * See {@link https://tools.ietf.org/html/rfc6265#section-4.1}.
- * @param value Cookie value.
+ * @param value - Cookie value
  */
 export function validateCookieValue(value: string): boolean {
   for (let index = 0; index < value.length; index++) {

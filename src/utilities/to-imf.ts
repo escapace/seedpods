@@ -16,8 +16,8 @@ function dtPad(v: string, lPad = 2): string {
  * IMF is the time format to use when generating times in HTTP
  * headers. The time being formatted must be in UTC for Format to
  * generate the correct format.
- * @param date Date to parse
- * @return IMF date formatted string
+ * @param date - Date to parse
+ * @returns IMF date formatted string
  */
 export function toIMF(date: Date): string {
   const d = dtPad(date.getUTCDate().toString())
@@ -38,9 +38,7 @@ export function toIMF(date: Date): string {
     'Sep',
     'Oct',
     'Nov',
-    'Dec'
+    'Dec',
   ]
-  return `${days[date.getUTCDay()]}, ${d} ${
-    months[date.getUTCMonth()]
-  } ${y} ${h}:${min}:${s} GMT`
+  return `${days[date.getUTCDay()]}, ${d} ${months[date.getUTCMonth()]} ${y} ${h}:${min}:${s} GMT`
 }
