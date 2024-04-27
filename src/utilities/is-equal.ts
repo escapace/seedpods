@@ -1,10 +1,6 @@
-export type AnyObject =
-  | null
-  | Record<number | string | symbol, unknown>
-  | undefined
+type AnyObject = null | Record<number | string | symbol, unknown> | undefined
 
-const isObject = (value: unknown): value is AnyObject =>
-  typeof value === 'object'
+const isObject = (value: unknown): value is AnyObject => typeof value === 'object'
 
 function equalArray(left: unknown[], right: unknown[]) {
   const { length } = left
@@ -27,7 +23,7 @@ export function isEqual(left: unknown, right: unknown) {
     return true
   }
 
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  // eslint-disable-next-line typescript/strict-boolean-expressions
   if (left && isObject(left) && right && isObject(right)) {
     if (left.constructor !== right.constructor) {
       return false

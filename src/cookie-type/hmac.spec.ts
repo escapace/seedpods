@@ -1,4 +1,5 @@
-import { assert } from 'chai'
+/* eslint-disable typescript/no-non-null-assertion */
+import { assert, describe, it } from 'vitest'
 import { to, from } from './hmac'
 
 // 'chain-happy-record-blank'
@@ -9,18 +10,11 @@ describe('hmac', () => {
   it('key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const signedCookie = await to(cookieValue, [
-      Buffer.from('chain-happy-record-blank')
-    ])
+    const signedCookie = await to(cookieValue, [Buffer.from('chain-happy-record-blank')])
 
-    assert.equal(
-      signedCookie,
-      'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
-    )
+    assert.equal(signedCookie, 'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8')
 
-    const unsignedCookie = await from(signedCookie!, [
-      Buffer.from('chain-happy-record-blank')
-    ])
+    const unsignedCookie = await from(signedCookie!, [Buffer.from('chain-happy-record-blank')])
 
     assert.deepEqual(unsignedCookie, { rotate: false, value: cookieValue })
   })
@@ -28,18 +22,11 @@ describe('hmac', () => {
   it('wrong key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const signedCookie = await to(cookieValue, [
-      Buffer.from('chain-happy-record-blank')
-    ])
+    const signedCookie = await to(cookieValue, [Buffer.from('chain-happy-record-blank')])
 
-    assert.equal(
-      signedCookie,
-      'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
-    )
+    assert.equal(signedCookie, 'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8')
 
-    const unsignedCookie = await from(signedCookie!, [
-      Buffer.from('record-blank')
-    ])
+    const unsignedCookie = await from(signedCookie!, [Buffer.from('record-blank')])
 
     assert.equal(unsignedCookie, undefined)
   })
@@ -47,44 +34,27 @@ describe('hmac', () => {
   it('second key', async () => {
     const cookieValue = Buffer.from('hello')
 
-    const signedCookie = await to(cookieValue, [
-      Buffer.from('chain-happy-record-blank')
-    ])
+    const signedCookie = await to(cookieValue, [Buffer.from('chain-happy-record-blank')])
 
-    assert.equal(
-      signedCookie,
-      'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8'
-    )
+    assert.equal(signedCookie, 'aGVsbG8.O9MpLTsvrxg2Z5O2RV05_LJ6I5Skmx6tQ1g3rQXcaW8')
 
     const unsignedCookie = await from(signedCookie!, [
       Buffer.from('desk-species-eventually-vowel'),
-      Buffer.from('chain-happy-record-blank')
+      Buffer.from('chain-happy-record-blank'),
     ])
 
     assert.deepEqual(unsignedCookie, { rotate: true, value: cookieValue })
   })
 
   it('empty', async () => {
-    assert.equal(
-      await to(Buffer.from(''), [Buffer.from('chain-happy-record-blank')]),
-      undefined
-    )
+    assert.equal(await to(Buffer.from(''), [Buffer.from('chain-happy-record-blank')]), undefined)
 
-    assert.equal(
-      await to(Buffer.from([]), [Buffer.from('chain-happy-record-blank')]),
-      undefined
-    )
+    assert.equal(await to(Buffer.from([]), [Buffer.from('chain-happy-record-blank')]), undefined)
   })
 
   it('malformed', async () => {
-    assert.equal(
-      await from('', [Buffer.from('desk-species-eventually-vowel')]),
-      undefined
-    )
+    assert.equal(await from('', [Buffer.from('desk-species-eventually-vowel')]), undefined)
 
-    assert.equal(
-      await from('.asd', [Buffer.from('desk-species-eventually-vowel')]),
-      undefined
-    )
+    assert.equal(await from('.asd', [Buffer.from('desk-species-eventually-vowel')]), undefined)
   })
 })

@@ -1,5 +1,5 @@
 export { cookie } from './cookie'
-export { jar } from './jar'
+export { jar, isJar } from './jar'
 export { take } from './take'
 export { deriveKey } from './utilities/derive-key'
 export { isEqual } from './utilities/is-equal'

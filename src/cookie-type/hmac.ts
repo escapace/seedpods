@@ -3,7 +3,7 @@ import { timingSafeEqual } from '../utilities/timing-safe-equal'
 export const to = async function (
   buffer: Buffer,
   keys: Buffer[],
-  keyIndex = 0
+  keyIndex = 0,
 ): Promise<string | undefined> {
   if (buffer.length === 0) {
     return undefined
@@ -14,14 +14,14 @@ export const to = async function (
     keys[keyIndex],
     { hash: 'SHA-256', name: 'HMAC' },
     false,
-    ['sign', 'verify']
+    ['sign', 'verify'],
   )
   const signature = Buffer.from(await crypto.subtle.sign('HMAC', key, buffer))
 
   return buffer.toString('base64url') + '.' + signature.toString('base64url')
 }
 
-export function compare(a: Buffer, b: Buffer) {
+function compare(a: Buffer, b: Buffer) {
   if (a.length !== b.length) {
     timingSafeEqual(a, a)
     return false

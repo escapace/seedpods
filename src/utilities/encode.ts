@@ -1,13 +1,10 @@
 import { canonicalize } from '@escapace/canonicalize'
-import type {
-  CookieOptionsParsed,
-  CookieType,
-  CookieValueInput
-} from './parse-cookie-options'
+import type { CookieOptionsParsed, CookieType, CookieValueInput } from './parse-cookie-options'
 
 export const encode = (
+  // eslint-disable-next-line typescript/no-explicit-any
   value: any,
-  options: CookieOptionsParsed<string, CookieType, unknown>
+  options: CookieOptionsParsed<string, CookieType, unknown>,
 ): Buffer | undefined => {
   if (value === undefined) {
     return
@@ -21,10 +18,9 @@ export const encode = (
       // secure: options.secure,
       // httpOnly: options.httpOnly,
       // sameSite: options.sameSite,
-      maxAge: options.maxAge
+      maxAge: options.maxAge,
     },
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    value
+    value,
   }
 
   return Buffer.from(canonicalize(payload))

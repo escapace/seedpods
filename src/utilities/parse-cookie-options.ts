@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable typescript/no-unused-vars */
 import z from 'zod'
 
 const FIELD_CONTENT_REGEXP = /^(?=[\x20-\x7E]*$)[^\s"(),:;<=>?@[\\\]{}]+$/
@@ -7,8 +7,8 @@ const jsonSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
     z.union([z.string(), z.number(), z.boolean(), z.null()]),
     z.array(jsonSchema),
-    z.record(jsonSchema)
-  ])
+    z.record(jsonSchema),
+  ]),
 )
 
 const sharedOptionsSchema = z.object({
@@ -16,17 +16,17 @@ const sharedOptionsSchema = z.object({
     .number()
     .int()
     .refine((value) => value >= 0)
-    .optional()
+    .optional(),
 })
 
 export const cookieValueSchema = z
   .object({
     options: sharedOptionsSchema
       .extend({
-        key: z.string()
+        key: z.string(),
       })
       .strip(),
-    value: jsonSchema
+    value: jsonSchema,
   })
   .strip()
 
@@ -44,7 +44,7 @@ const baseOptionsSchema = sharedOptionsSchema.extend({
 
         return true
       },
-      { message: 'Invalid first/last char in cookie domain' }
+      { message: 'Invalid first/last char in cookie domain' },
     )
     .optional(),
   httpOnly: z.boolean().optional(),
@@ -52,7 +52,7 @@ const baseOptionsSchema = sharedOptionsSchema.extend({
     .string()
     .min(1)
     .refine((value) => FIELD_CONTENT_REGEXP.test(value), {
-      message: 'Invalid cookie key'
+      message: 'Invalid cookie key',
     }),
   name: z
     .string()
@@ -68,7 +68,7 @@ const baseOptionsSchema = sharedOptionsSchema.extend({
           !['__Secure-', '__Host-'].some((prefix) => value.startsWith(prefix))
         )
       },
-      { message: 'Invalid cookie key' }
+      { message: 'Invalid cookie key' },
     ),
   path: z
     .string()
@@ -77,18 +77,14 @@ const baseOptionsSchema = sharedOptionsSchema.extend({
       (value) => {
         for (let index = 0; index < value.length; index++) {
           const c = value.charAt(index)
-          if (
-            c < String.fromCharCode(0x20) ||
-            c > String.fromCharCode(0x7e) ||
-            c === ';'
-          ) {
+          if (c < String.fromCharCode(0x20) || c > String.fromCharCode(0x7e) || c === ';') {
             return false
           }
         }
 
         return true
       },
-      { message: 'Invalid cookie path character' }
+      { message: 'Invalid cookie path character' },
     )
     .optional(),
   //   .optional(),
@@ -97,7 +93,7 @@ const baseOptionsSchema = sharedOptionsSchema.extend({
   // expires: z
   //   .date()
   //   .transform((date) => ({ imf: toIMF(date), date }))
-  secure: z.boolean().optional()
+  secure: z.boolean().optional(),
 })
 
 const cookieOptionsSchema = z
@@ -108,33 +104,27 @@ const cookieOptionsSchema = z
           .array(
             z
               .any()
-              .refine<Buffer>((value: unknown): value is Buffer =>
-                Buffer.isBuffer(value)
-              )
+              .refine<Buffer>((value: unknown): value is Buffer => Buffer.isBuffer(value))
               .refine((value) => value.byteLength === 32, {
-                message: `The key should be strictly 256 bits.`
-              })
+                message: `The key should be strictly 256 bits.`,
+              }),
           )
           .nonempty()
           .max(5),
-        type: z.literal('aes-gcm')
+        type: z.literal('aes-gcm'),
       })
       .strict(),
     baseOptionsSchema
       .extend({
         keys: z
           .array(
-            z
-              .any()
-              .refine<Buffer>((value: unknown): value is Buffer =>
-                Buffer.isBuffer(value)
-              )
+            z.any().refine<Buffer>((value: unknown): value is Buffer => Buffer.isBuffer(value)),
           )
           .nonempty()
           .max(5),
-        type: z.literal('hmac')
+        type: z.literal('hmac'),
       })
-      .strict()
+      .strict(),
   ])
   .refine(
     (value) => {
@@ -143,19 +133,15 @@ const cookieOptionsSchema = z
       }
 
       if (value.prefix === '__Host-') {
-        return (
-          value.secure === true &&
-          value.domain === undefined &&
-          value.path === '/'
-        )
+        return value.secure === true && value.domain === undefined && value.path === '/'
       }
 
       return true
     },
     {
       message:
-        '"__Host-" prefixed cookie must be set with a "secure" attribute, MUST NOT contain a "Domain" attribute and MUST contain a "Path" attribute with a value of "/"'
-    }
+        '"__Host-" prefixed cookie must be set with a "secure" attribute, MUST NOT contain a "Domain" attribute and MUST contain a "Path" attribute with a value of "/"',
+    },
   )
   .transform((cookie) => {
     const name =
@@ -165,7 +151,7 @@ const cookieOptionsSchema = z
 
     return {
       ...cookie,
-      name
+      name,
     }
   })
 
@@ -178,30 +164,18 @@ export type CookieValueSchema = typeof cookieValueSchema
 export type CookieValueInput = z.input<CookieValueSchema>
 export type CookieValue = z.output<CookieValueSchema>
 
-export type CookieOptions<
-  KEY extends string,
-  TYPE extends CookieType,
-  _VALUE
-> = {
+export type CookieOptions<KEY extends string, TYPE extends CookieType, _VALUE> = {
   key: KEY
   type: TYPE
 } & Omit<ZodInputCookieOptionsSchema, 'key' | 'type'>
 
-export type CookieOptionsParsed<
-  KEY extends string,
-  TYPE extends CookieType,
-  _VALUE
-> = {
+export type CookieOptionsParsed<KEY extends string, TYPE extends CookieType, _VALUE> = {
   key: KEY
   type: TYPE
 } & Omit<ZodOutputCookieOptionsSchema, 'key' | 'type'>
 
-export const parseCookieOptions = <
-  KEY extends string,
-  TYPE extends CookieType,
-  _VALUE
->(
-  value: CookieOptions<KEY, TYPE, _VALUE>
+export const parseCookieOptions = <KEY extends string, TYPE extends CookieType, _VALUE>(
+  value: CookieOptions<KEY, TYPE, _VALUE>,
 ): CookieOptionsParsed<KEY, TYPE, _VALUE> => {
   const result = cookieOptionsSchema.safeParse(value)
 
@@ -218,19 +192,16 @@ export const parseCookieOptions = <
       ...flattenedError.formErrors,
       ...Object.keys(flattenedError.fieldErrors).flatMap((key) => {
         const value =
-          flattenedError.fieldErrors[
-            key as keyof typeof flattenedError.fieldErrors
-          ]!
+          // eslint-disable-next-line typescript/no-non-null-assertion
+          flattenedError.fieldErrors[key as keyof typeof flattenedError.fieldErrors]!
 
-        return value.map(
-          (string_) => `Key '${key}' - ${string_.toLowerCase()}.`
-        )
-      })
+        return value.map((string_) => `Key '${key}' - ${string_.toLowerCase()}.`)
+      }),
     ].join(' ')
 
     throw new Error(message)
   }
 
-  // eslint-disable-next-line @typescript-eslint/only-throw-error
+  // eslint-disable-next-line typescript/only-throw-error
   throw error
 }
