@@ -1,8 +1,7 @@
 /*!
  *
  * Adaptation of https://github.com/jshttp/cookie licensed under the MIT License
- * found in the LICENSE-JSHTTP-COOKIE file in the root directory of this source
- * tree.
+ * found in the https://github.com/jshttp/cookie/blob/master/LICENSE file.
  *
  */
 
