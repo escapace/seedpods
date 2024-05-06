@@ -1,8 +1,7 @@
 /*!
  *
  * Adaptation of https://github.com/denoland/deno_std licensed under the MIT
- * License found in the LICENSE-DENO-STD file in the root directory of this
- * source tree.
+ * License found in the https://github.com/denoland/deno_std/blob/main/LICENSE file.
  *
  */
 
