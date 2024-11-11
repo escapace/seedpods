@@ -1,4 +1,3 @@
-/* eslint-disable typescript/no-unused-vars */
 import z from 'zod'
 
 const FIELD_CONTENT_REGEXP = /^(?=[\x20-\x7E]*$)[^\s"(),:;<=>?@[\\\]{}]+$/
@@ -146,7 +145,7 @@ const cookieOptionsSchema = z
   .transform((cookie) => {
     const name =
       cookie.prefix === undefined
-        ? cookie.name ?? cookie.key
+        ? (cookie.name ?? cookie.key)
         : `${cookie.prefix}${cookie.name ?? cookie.key}`
 
     return {

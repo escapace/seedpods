@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { parseArgs } from 'node:util'
 import { deriveKey } from './utilities/derive-key'
 
@@ -20,19 +22,19 @@ try {
     options: {
       help: {
         short: 'h',
-        type: 'boolean'
+        type: 'boolean',
       },
       iterations: {
-        type: 'string'
+        type: 'string',
       },
       salt: {
-        type: 'string'
+        type: 'string',
       },
       secret: {
-        type: 'string'
-      }
+        type: 'string',
+      },
     },
-    strict: true
+    strict: true,
   })
 
   if (values.help === true) {

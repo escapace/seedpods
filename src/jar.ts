@@ -23,6 +23,7 @@ export interface State {
 }
 
 export interface InitialState {
+  // eslint-disable-next-line typescript/no-empty-object-type
   cookies: {}
 }
 

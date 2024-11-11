@@ -1,23 +1,18 @@
 /* eslint-disable no-labels */
 
-export const to = async (
-  buffer: Buffer,
-  keys: Buffer[]
-): Promise<string | undefined> => {
+export const to = async (buffer: Buffer, keys: Buffer[]): Promise<string | undefined> => {
   if (buffer.length === 0) {
     return undefined
   }
 
   const key = await crypto.subtle.importKey('raw', keys[0], 'AES-GCM', false, [
     'encrypt',
-    'decrypt'
+    'decrypt',
   ])
 
   // https://developer.mozilla.org/en-US/docs/Web/API/AesGcmParams
   const iv = Buffer.from(crypto.getRandomValues(new Uint8Array(12)))
-  const cipher = Buffer.from(
-    await crypto.subtle.encrypt({ iv, name: 'AES-GCM' }, key, buffer)
-  )
+  const cipher = Buffer.from(await crypto.subtle.encrypt({ iv, name: 'AES-GCM' }, key, buffer))
 
   return cipher.toString('base64url') + '.' + iv.toString('base64url')
 }
@@ -39,18 +34,13 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
   let value: Buffer | undefined
 
   outer: for (let index = 0; index < keys.length; index++) {
-    const key = await crypto.subtle.importKey(
-      'raw',
-      keys[index],
-      'AES-GCM',
-      false,
-      ['encrypt', 'decrypt']
-    )
+    const key = await crypto.subtle.importKey('raw', keys[index], 'AES-GCM', false, [
+      'encrypt',
+      'decrypt',
+    ])
 
     try {
-      value = Buffer.from(
-        await crypto.subtle.decrypt({ iv, name: 'AES-GCM' }, key, cipher)
-      )
+      value = Buffer.from(await crypto.subtle.decrypt({ iv, name: 'AES-GCM' }, key, cipher))
 
       rotate = index > 0
       success = true

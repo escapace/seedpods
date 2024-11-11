@@ -6,8 +6,8 @@ export const decode = (value: Buffer) => {
     const payload = cookieValueSchema.parse(
       sjson.parse(value.toString(), undefined, {
         constructorAction: 'remove',
-        protoAction: 'remove'
-      }) as unknown
+        protoAction: 'remove',
+      }) as unknown,
     )
 
     return payload

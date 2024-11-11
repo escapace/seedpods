@@ -21,15 +21,6 @@ export const to = async function (
   return buffer.toString('base64url') + '.' + signature.toString('base64url')
 }
 
-function compare(a: Buffer, b: Buffer) {
-  if (a.length !== b.length) {
-    timingSafeEqual(a, a)
-    return false
-  }
-
-  return timingSafeEqual(a, b)
-}
-
 export const from = async (cookieValue: string, keys: Buffer[]) => {
   const split = cookieValue.split('.')
   const valueB64 = split[0]
@@ -54,7 +45,7 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
 
     const expectedBuffer = Buffer.from(expectedInput)
 
-    const decoded = compare(expectedBuffer, inputBuffer)
+    const decoded = timingSafeEqual(expectedBuffer, inputBuffer)
 
     rotate = decoded && index > 0
 

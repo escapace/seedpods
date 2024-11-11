@@ -14,7 +14,7 @@ const CookieStatePriority = [
 
 type CookieHeader = string | undefined
 
-type Reducer<T> = (previous?: T | undefined, next?: T | undefined) => T | undefined
+type Reducer<T> = (previous?: T, next?: T) => T | undefined
 
 type Reducers<T extends JAR> = {
   [P in Keys<T>]?: Reducer<Value<T, P>> | undefined
@@ -23,8 +23,8 @@ type Reducers<T extends JAR> = {
 interface Take<T extends JAR> {
   del: (key: Keys<T>) => void
   entries: () => Promise<Array<[Keys<T>, string]>>
-  get: <U extends Keys<T>>(key: U) => undefined | Value<T, U>
-  set: <U extends Keys<T>>(key: U, value: undefined | Value<T, U>) => void
+  get: <U extends Keys<T>>(key: U) => Value<T, U> | undefined
+  set: <U extends Keys<T>>(key: U, value: Value<T, U> | undefined) => void
   values: () => Promise<string[]>
 }
 
@@ -110,7 +110,7 @@ export const take = async <T extends JAR>(
     }
   }
 
-  const set = (key: string, value: undefined | Value<T, string>): void => {
+  const set = (key: string, value: Value<T, string> | undefined): void => {
     const cookieStates = state.get(key)
 
     if (cookieStates === undefined) {

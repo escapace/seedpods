@@ -1,4 +1,4 @@
-type AnyObject = null | Record<number | string | symbol, unknown> | undefined
+type AnyObject = Record<number | string | symbol, unknown> | null | undefined
 
 const isObject = (value: unknown): value is AnyObject => typeof value === 'object'
 
