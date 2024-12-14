@@ -155,13 +155,13 @@ const cookieOptionsSchema = z
   })
 
 export type CookieOptionsSchema = typeof cookieOptionsSchema
+export type CookieType = ZodInputCookieOptionsSchema['type']
 export type ZodInputCookieOptionsSchema = z.input<CookieOptionsSchema>
 export type ZodOutputCookieOptionsSchema = z.output<CookieOptionsSchema>
-export type CookieType = ZodInputCookieOptionsSchema['type']
 
-export type CookieValueSchema = typeof cookieValueSchema
-export type CookieValueInput = z.input<CookieValueSchema>
 export type CookieValue = z.output<CookieValueSchema>
+export type CookieValueInput = z.input<CookieValueSchema>
+export type CookieValueSchema = typeof cookieValueSchema
 
 export type CookieOptions<KEY extends string, TYPE extends CookieType, _VALUE> = {
   key: KEY
