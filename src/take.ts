@@ -20,7 +20,7 @@ type Reducers<T extends JAR> = {
   [P in Keys<T>]?: Reducer<Value<T, P>> | undefined
 }
 
-interface Take<T extends JAR> {
+export interface Take<T extends JAR> {
   del: (key: Keys<T>) => void
   entries: () => Promise<Array<[Keys<T>, string]>>
   get: <U extends Keys<T>>(key: U) => Value<T, U> | undefined
