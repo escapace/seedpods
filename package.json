@@ -57,6 +57,12 @@
   "peerDependencies": {
     "@escapace/typelevel": ">=2.0.2"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "lefthook",
+      "esbuild"
+    ]
+  },
   "private": false,
   "publishConfig": {
     "access": "public",
