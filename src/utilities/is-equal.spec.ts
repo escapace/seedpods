@@ -1,10 +1,27 @@
 import { assert, describe, it } from 'vitest'
 import { forEach } from 'lodash-es'
-import { isEqual } from './is-equal'
+import { deepEqual as isEqual } from 'fast-equals'
 
 describe('arrays', () => {
   forEach(
     [
+      {
+        description: 'undefined',
+        expected: false,
+        value1: {
+          chroma: 0.54,
+          contrast: 0.7,
+          lightness: 0.85,
+          model: 'two',
+        },
+        value2: {
+          chroma: 0.54,
+          colorScheme: 'light',
+          contrast: 0.7,
+          lightness: 0.85,
+          model: 'two',
+        },
+      },
       {
         description: 'two empty arrays are equal',
         expected: true,

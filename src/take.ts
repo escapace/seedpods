@@ -1,6 +1,6 @@
 import { type CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
 import { type JAR, type Keys, SYMBOL_JAR, type Value } from './jar'
-import { isEqual } from './utilities/is-equal'
+import { deepEqual } from 'fast-equals'
 
 import { parseCookieHeader } from './utilities/parse-cookie-header'
 
@@ -146,7 +146,7 @@ export const take = async <T extends JAR>(
       const firstCookieIsSet = firstCookieState.type === TypeCookieState.Set
       const lastCookieIsSet = lastCookieState.type === TypeCookieState.Set
 
-      if (!(firstCookieIsSet && lastCookieIsSet && isEqual(firstCookieValue, lastCookieValue))) {
+      if (!(firstCookieIsSet && lastCookieIsSet && deepEqual(firstCookieValue, lastCookieValue))) {
         promises.push(
           cookie
             .toString(lastCookieState)
