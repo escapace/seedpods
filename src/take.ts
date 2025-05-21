@@ -1,6 +1,6 @@
+import { deepEqual } from 'fast-equals'
 import { type CookieState, SYMBOL_COOKIE, TypeCookieState } from './cookie'
 import { type JAR, type Keys, SYMBOL_JAR, type Value } from './jar'
-import { deepEqual } from 'fast-equals'
 
 import { parseCookieHeader } from './utilities/parse-cookie-header'
 
@@ -20,7 +20,7 @@ type Reducers<T extends JAR> = {
   [P in Keys<T>]?: Reducer<Value<T, P>> | undefined
 }
 
-export interface Take<T extends JAR> {
+export interface Cookies<T extends JAR> {
   del: (key: Keys<T>) => void
   entries: () => Promise<Array<[Keys<T>, string]>>
   get: <U extends Keys<T>>(key: U) => Value<T, U> | undefined
@@ -37,7 +37,7 @@ export const take = async <T extends JAR>(
   cookieHeader: CookieHeader | undefined,
   jar: T,
   reducers: Reducers<T> = {},
-): Promise<Take<T>> => {
+): Promise<Cookies<T>> => {
   const cookies = jar[SYMBOL_JAR].state.cookies
   const parsedCookieHeader = parseCookieHeader(cookieHeader)
 
@@ -146,7 +146,7 @@ export const take = async <T extends JAR>(
       const firstCookieIsSet = firstCookieState.type === TypeCookieState.Set
       const lastCookieIsSet = lastCookieState.type === TypeCookieState.Set
 
-      if (!(firstCookieIsSet && lastCookieIsSet && deepEqual(firstCookieValue, lastCookieValue))) {
+      if (!firstCookieIsSet || !lastCookieIsSet || !deepEqual(firstCookieValue, lastCookieValue)) {
         promises.push(
           cookie
             .toString(lastCookieState)
@@ -171,5 +171,5 @@ export const take = async <T extends JAR>(
     get,
     set,
     values,
-  } as Take<T>
+  } as Cookies<T>
 }

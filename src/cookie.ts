@@ -175,12 +175,12 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
   }
 }
 
-export function isCookie(cookie: unknown): asserts cookie is Cookie<string, CookieType, unknown> {
+export function assertCookie(
+  cookie: unknown,
+): asserts cookie is Cookie<string, CookieType, unknown> {
   if (
-    !(
-      typeof cookie === 'object' &&
-      typeof (cookie as Record<string | symbol, unknown>)[SYMBOL_COOKIE] === 'object'
-    )
+    typeof cookie !== 'object' ||
+    typeof (cookie as Record<string | symbol, unknown>)[SYMBOL_COOKIE] !== 'object'
   ) {
     throw new TypeError('Not a cookie.')
   }

@@ -71,19 +71,19 @@ const ball = cookie({
   type: 'hmac',
 })
 
-const cookieJar = jar().put(vixen).put(tycho).put(dazzle).put(ball)
+const cookieJarChild = jar().put(dazzle).put(ball)
+const cookieJar = jar().put(vixen).put(tycho).combine(cookieJarChild)
 
 describe('jar', () => {
   it('.', () => {
     assert.isFunction(jar)
-    assert.hasAllKeys(jar(), ['put'])
+    assert.hasAllKeys(jar(), ['put', 'combine'])
 
-    assert.hasAllKeys(cookieJar, ['put', SYMBOL_JAR])
+    assert.hasAllKeys(cookieJar, ['put', 'combine', SYMBOL_JAR])
 
     assert.deepStrictEqual(cookieJar[SYMBOL_JAR], {
       log: [
-        { payload: ball, type: TypeAction.Cookie },
-        { payload: dazzle, type: TypeAction.Cookie },
+        { payload: cookieJarChild, type: TypeAction.Combine },
         { payload: tycho, type: TypeAction.Cookie },
         { payload: vixen, type: TypeAction.Cookie },
       ],
