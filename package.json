@@ -13,7 +13,7 @@
   "dependencies": {
     "@escapace/canonicalize": "^0.1.2",
     "fast-equals": "^5.2.2",
-    "zod": "^3.25.13"
+    "zod": "^3.25.28"
   },
   "devDependencies": {
     "@commitlint/cli": "19.8.1",
@@ -27,7 +27,7 @@
     "eslint": "9.27.0",
     "eslint-config-escapace": "5.6.0",
     "esroll": "0.4.4",
-    "knip": "5.57.0",
+    "knip": "5.58.0",
     "lefthook": "1.11.13",
     "lodash-es": "4.17.21",
     "prettier": "3.5.3",
