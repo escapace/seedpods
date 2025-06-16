@@ -46,11 +46,11 @@ importers:
         specifier: 9.27.0
         version: 9.27.0(jiti@2.4.2)
       eslint-config-escapace:
-        specifier: 5.6.0
-        version: 5.6.0(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3)
+        specifier: 5.7.1
+        version: 5.7.1(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3)
       esroll:
-        specifier: 0.4.4
-        version: 0.4.4
+        specifier: 0.4.5
+        version: 0.4.5
       knip:
         specifier: 5.58.0
         version: 5.58.0(@types/node@22.15.21)(typescript@5.8.3)
@@ -1250,11 +1250,11 @@ packages:
     peerDependencies:
       eslint: '>=6.0.0'
 
-  eslint-config-escapace@5.6.0:
-    resolution: {integrity: sha512-KHCd3jSqa2qKrp/BVQ2PMawnH7kln9z2TOzg4hsXeUpcIOfw+vd5fzLWpyxnVjA9GKGAzlfcZzHOoIbWTMZkew==}
+  eslint-config-escapace@5.7.1:
+    resolution: {integrity: sha512-RzHfr+zRF9ZcZf2WCE7cwxFB2ozKpZ1vuCzOgM6iPmC/hlEdLuY+0qAFq8goCKRNFW4NVOCrhTirw28WL5VW5g==}
     engines: {node: '>=22.13.1', pnpm: '>=10.4.1'}
     peerDependencies:
-      eslint: '>=9.26.0'
+      eslint: '>=9.27.0'
 
   eslint-config-flat-gitignore@2.1.0:
     resolution: {integrity: sha512-cJzNJ7L+psWp5mXM7jBX+fjHtBvvh06RBlcweMhKD8jWqQw0G78hOW5tpVALGHGFPsBV+ot2H+pdDGJy6CV8pA==}
@@ -1375,8 +1375,8 @@ packages:
     resolution: {integrity: sha512-KmfKL3b6G+RXvP8N1vr3Tq1kL/oCFgn2NYXEtqP8/L3pKapUA4G8cFVaoF3SU323CD4XypR/ffioHmkti6/Tag==}
     engines: {node: '>=4.0'}
 
-  esroll@0.4.4:
-    resolution: {integrity: sha512-o2TaWPpkZZCOw4KsQWRzRrnVzfIZrFiu91DDkKK+trUY7Is2fRUbjhoyyDPitQGZyQLlA7CDB6y3Uhg2oqTTIw==}
+  esroll@0.4.5:
+    resolution: {integrity: sha512-h3y8kIWTS5CRrrOyjFZtwaCts7TIMCqmo6oMFu6258iIdz3gnuzuaGDrBqO3aUor4ArvscuqLS7ziW6rg57NDg==}
     engines: {node: '>=22.13.1', pnpm: '>=10.4.1'}
 
   estraverse@5.3.0:
@@ -3866,7 +3866,7 @@ snapshots:
       eslint: 9.27.0(jiti@2.4.2)
       semver: 7.7.2
 
-  eslint-config-escapace@5.6.0(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3):
+  eslint-config-escapace@5.7.1(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3):
     dependencies:
       '@stylistic/eslint-plugin': 4.4.1(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3)
       '@typescript-eslint/utils': 8.33.1(eslint@9.27.0(jiti@2.4.2))(typescript@5.8.3)
@@ -4092,7 +4092,7 @@ snapshots:
     dependencies:
       estraverse: 5.3.0
 
-  esroll@0.4.4:
+  esroll@0.4.5:
     dependencies:
       '@rollup/plugin-json': 6.1.0(rollup@4.42.0)
       '@rollup/pluginutils': 5.1.4(rollup@4.42.0)
