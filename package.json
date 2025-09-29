@@ -19,7 +19,7 @@
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@escapace/pnpm-pack": "0.6.0",
-    "@escapace/typelevel": "2.0.2",
+    "@escapace/typelevel": "2.0.3",
     "@ls-lint/ls-lint": "2.3.0",
     "@types/lodash-es": "4.17.12",
     "@types/node": "22.15.21",

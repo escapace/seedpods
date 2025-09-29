@@ -28,8 +28,8 @@ importers:
         specifier: 0.6.0
         version: 0.6.0(@pnpm/logger@5.2.0)
       '@escapace/typelevel':
-        specifier: 2.0.2
-        version: 2.0.2
+        specifier: 2.0.3
+        version: 2.0.3
       '@ls-lint/ls-lint':
         specifier: 2.3.0
         version: 2.3.0
@@ -356,9 +356,9 @@ packages:
     engines: {node: '>=22.13.1', pnpm: '>=10.4.1'}
     hasBin: true
 
-  '@escapace/typelevel@2.0.2':
-    resolution: {integrity: sha512-ejyBr9bFNQEe2aDYWesn4KfX4OvYoaiPnCzSXrUA/Ox/mLeUahYTLwZIIArFgh2yeJE4jjP5n8aO72a58WrMHA==}
-    engines: {pnpm: '>=9.4.0'}
+  '@escapace/typelevel@2.0.3':
+    resolution: {integrity: sha512-LlaEdqvOk3YEehh3d5qdciXsV5p29GTx5XBd9pjGSAhvuiKWD2/4eOiUiUUFm1gjinJyncFOd7RXa5akPimWZQ==}
+    engines: {pnpm: '>=10.14.0'}
 
   '@eslint-community/eslint-utils@4.9.0':
     resolution: {integrity: sha512-ayVFHdtZ+hsq1t2Dy24wCmGXGe4q9Gu3smhLYALJrr473ZH27MsnSL+LKUlimp4BWJqMDMLmPpx/Q9R3OAlL4g==}
@@ -2953,7 +2953,7 @@ snapshots:
       - domexception
       - supports-color
 
-  '@escapace/typelevel@2.0.2': {}
+  '@escapace/typelevel@2.0.3': {}
 
   '@eslint-community/eslint-utils@4.9.0(eslint@9.31.0(jiti@2.5.1))':
     dependencies:
