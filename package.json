@@ -31,7 +31,7 @@
     "lefthook": "1.11.13",
     "lodash-es": "4.17.23",
     "prettier": "3.5.3",
-    "prettier-config-escapace": "1.2.1",
+    "prettier-config-escapace": "1.2.2",
     "secure-json-parse": "4.0.0",
     "syncpack": "13.0.4",
     "tsx": "4.19.4",
@@ -56,7 +56,7 @@
   "license": "MPL-2.0",
   "module": "./lib/node/index.js",
   "peerDependencies": {
-    "@escapace/typelevel": ">=2.0.2"
+    "@escapace/typelevel": ">=2.0.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
