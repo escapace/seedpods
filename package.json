@@ -35,7 +35,7 @@
     "secure-json-parse": "4.0.0",
     "syncpack": "13.0.4",
     "tsx": "4.19.4",
-    "typescript": "5.8.3",
+    "typescript": "5.9.3",
     "vitest": "3.1.4"
   },
   "engines": {
