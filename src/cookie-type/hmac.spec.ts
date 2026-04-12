@@ -1,4 +1,4 @@
-/* eslint-disable typescript/no-non-null-assertion */
+ 
 import { assert, describe, it } from 'vitest'
 import { to, from } from './hmac'
 

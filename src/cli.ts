@@ -58,7 +58,7 @@ try {
     if (typeof values.iterations === 'string') {
       const number = parseInt(values.iterations, 10)
 
-      if (isNaN(number)) {
+      if (Number.isNaN(number)) {
         help()
         process.exit(1)
       } else {

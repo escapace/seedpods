@@ -2,14 +2,6 @@ import z from 'zod'
 
 const FIELD_CONTENT_REGEXP = /^(?=[\x20-\x7E]*$)[^\s"(),:;<=>?@[\\\]{}]+$/
 
-const jsonSchema: z.ZodType<unknown> = z.lazy(() =>
-  z.union([
-    z.union([z.string(), z.number(), z.boolean(), z.null()]),
-    z.array(jsonSchema),
-    z.record(jsonSchema),
-  ]),
-)
-
 const sharedOptionsSchema = z.object({
   maxAge: z
     .number()
@@ -25,7 +17,7 @@ export const cookieValueSchema = z
         key: z.string(),
       })
       .strip(),
-    value: jsonSchema,
+    value: z.json(),
   })
   .strip()
 
@@ -103,7 +95,7 @@ const cookieOptionsSchema = z
           .array(
             z
               .any()
-              .refine<Buffer>((value: unknown): value is Buffer => Buffer.isBuffer(value))
+              .refine((value: unknown): value is Buffer => Buffer.isBuffer(value))
               .refine((value) => value.byteLength === 32, {
                 message: `The key should be strictly 256 bits.`,
               }),
@@ -117,7 +109,7 @@ const cookieOptionsSchema = z
       .extend({
         keys: z
           .array(
-            z.any().refine<Buffer>((value: unknown): value is Buffer => Buffer.isBuffer(value)),
+            z.any().refine((value: unknown): value is Buffer => Buffer.isBuffer(value)),
           )
           .nonempty()
           .max(5),
@@ -185,18 +177,19 @@ export const parseCookieOptions = <KEY extends string, TYPE extends CookieType, 
   const error = result.error
 
   if (error instanceof z.ZodError) {
-    const flattenedError = error.flatten()
+    const flattenedError = z.treeifyError(error)
+    // TODO: clean this up
     const message = [
       'Encountered issues parsing options.',
-      ...flattenedError.formErrors,
-      ...Object.keys(flattenedError.fieldErrors).flatMap((key) => {
-        const value =
-          // eslint-disable-next-line typescript/no-non-null-assertion
-          flattenedError.fieldErrors[key as keyof typeof flattenedError.fieldErrors]!
-
-        return value.map((string_) => `Key '${key}' - ${string_.toLowerCase()}.`)
-      }),
-    ].join(' ')
+      ...flattenedError.errors,
+      // ...Object.keys(flattenedError.fieldErrors).flatMap((key) => {
+      //   const value =
+      //     // eslint-disable-next-line typescript/no-non-null-assertion
+      //     flattenedError.fieldErrors[key as keyof typeof flattenedError.fieldErrors]!
+      //
+      //   return value.map((string_) => `Key '${key}' - ${string_.toLowerCase()}.`)
+      // }),
+    ].join(', ')
 
     throw new Error(message)
   }

@@ -1,5 +1,15 @@
 {
-  "exclude": ["**/*.spec.ts", "**/example*.ts"],
+  "compilerOptions": {
+    "rootDir": "./src"
+  },
+  "exclude": [
+    "**/*.bench.ts",
+    "**/*.spec.ts",
+    "**/example*.ts",
+    "./src/test-support/**"
+  ],
   "extends": "./tsconfig.json",
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

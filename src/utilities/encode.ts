@@ -23,5 +23,5 @@ export const encode = (
     value,
   }
 
-  return Buffer.from(canonicalize(payload))
+  return Buffer.from(canonicalize(payload)!)
 }

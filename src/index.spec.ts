@@ -1,4 +1,4 @@
-/* eslint-disable typescript/no-non-null-assertion */
+ 
 import { assert, describe, it } from 'vitest'
 import { cookie, SYMBOL_COOKIE } from './cookie'
 import { to as toAesGcm } from './cookie-type/aes-gcm'
