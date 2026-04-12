@@ -13,7 +13,7 @@
   "dependencies": {
     "@escapace/canonicalize": "^0.1.2",
     "fast-equals": "^5.4.0",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@commitlint/cli": "19.8.1",
