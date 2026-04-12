@@ -20,7 +20,7 @@ type Reducers<T extends JAR> = {
   [P in Keys<T>]?: Reducer<Value<T, P>> | undefined
 }
 
-export interface Cookies<T extends JAR> {
+export interface SeedpodsCookies<T extends JAR> {
   del: (key: Keys<T>) => void
   entries: () => Promise<Array<[Keys<T>, string]>>
   get: <U extends Keys<T>>(key: U) => Value<T, U> | undefined
@@ -37,7 +37,7 @@ export const take = async <T extends JAR>(
   cookieHeader: CookieHeader | undefined,
   jar: T,
   reducers: Reducers<T> = {},
-): Promise<Cookies<T>> => {
+): Promise<SeedpodsCookies<T>> => {
   const cookies = jar[SYMBOL_JAR].state.cookies
   const parsedCookieHeader = parseCookieHeader(cookieHeader)
 
@@ -171,5 +171,5 @@ export const take = async <T extends JAR>(
     get,
     set,
     values,
-  } as Cookies<T>
+  } as SeedpodsCookies<T>
 }

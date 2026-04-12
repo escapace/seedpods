@@ -1,4 +1,3 @@
- 
 import { assert, describe, it } from 'vitest'
 import { cookie, SYMBOL_COOKIE } from './cookie'
 import { to as toAesGcm } from './cookie-type/aes-gcm'
@@ -108,12 +107,12 @@ describe('jar', () => {
 })
 
 describe('take', () => {
-  it('.', async () => {
+  it('returns the expected interface', async () => {
     assert.isFunction(take)
     assert.hasAllKeys(await take('', cookieJar), ['del', 'get', 'set', 'values', 'entries'])
   })
 
-  it('.', async () => {
+  it('reads, merges, writes, and deletes cookie values', async () => {
     const cookieHeader = `__Secure-vixen=${(await toAesGcm(
       encode({ author: 'escape', change: 'triangle' }, vixen[SYMBOL_COOKIE].options)!,
       [keyC],

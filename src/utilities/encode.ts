@@ -1,16 +1,16 @@
 import { canonicalize } from '@escapace/canonicalize'
-import type { CookieOptionsParsed, CookieType, CookieValueInput } from './parse-cookie-options'
+import type { SeedpodsCookieValue, SeedpodsParsedCookieOptions } from './parse-cookie-options'
 
 export const encode = (
   // eslint-disable-next-line typescript/no-explicit-any
   value: any,
-  options: CookieOptionsParsed<string, CookieType, unknown>,
+  options: SeedpodsParsedCookieOptions,
 ): Buffer | undefined => {
   if (value === undefined) {
     return
   }
 
-  const payload: CookieValueInput = {
+  const payload: SeedpodsCookieValue = {
     options: {
       key: options.key,
       // path: options.path,

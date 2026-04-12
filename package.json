@@ -12,14 +12,13 @@
   "bugs": "https://github.com/escapace/seedpods/issues",
   "dependencies": {
     "@escapace/canonicalize": "^1.1.0",
-    "fast-equals": "^6.0.0",
-    "zod": "^4.3.6"
+    "fast-equals": "^6.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
     "@commitlint/config-conventional": "20.5.0",
     "@escapace/pnpm-pack": "0.8.0",
-    "@escapace/syncpack-configuration": "^0.1.0",
+    "@escapace/syncpack-configuration": "0.1.0",
     "@escapace/typelevel": "2.0.3",
     "@ls-lint/ls-lint": "2.3.1",
     "@types/node": "24.9.2",
@@ -55,7 +54,7 @@
   "license": "MPL-2.0",
   "module": "./lib/node/index.js",
   "peerDependencies": {
-    "@escapace/typelevel": ">=2.0.3"
+    "@escapace/typelevel": "^2.0.3"
   },
   "private": false,
   "publishConfig": {

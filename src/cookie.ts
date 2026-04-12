@@ -4,10 +4,11 @@ import { decode } from './utilities/decode'
 import { encode } from './utilities/encode'
 import {
   parseCookieOptions,
-  type CookieOptions,
-  type CookieOptionsParsed,
-  type CookieType,
-  type CookieValue,
+  type SeedpodsCookieOptionsForType,
+  type SeedpodsCookieType,
+  type SeedpodsCookieValue,
+  type SeedpodsParsedCookieOptions,
+  type SeedpodsParsedCookieOptionsForType,
 } from './utilities/parse-cookie-options'
 import { toIMF } from './utilities/to-imf'
 
@@ -56,12 +57,12 @@ export interface Cookie<
   // eslint-disable-next-line typescript/no-explicit-any
   KEY extends string = any,
   // eslint-disable-next-line typescript/no-explicit-any
-  TYPE extends CookieType = any,
+  TYPE extends SeedpodsCookieType = any,
   // eslint-disable-next-line typescript/no-explicit-any
-  VALUE = any,
+  _VALUE = any,
 > {
   readonly [SYMBOL_COOKIE]: {
-    readonly options: CookieOptionsParsed<KEY, TYPE, VALUE>
+    readonly options: SeedpodsParsedCookieOptionsForType<KEY, TYPE>
     fromString: (value: string | undefined) => Promise<CookieState>
     toString: (value: CookieState) => Promise<string | undefined>
   }
@@ -69,7 +70,7 @@ export interface Cookie<
 
 export type Key<T> = T extends Cookie<infer KEY> ? KEY : never
 
-const attributes = (cookie: CookieOptionsParsed<string, CookieType, unknown>, expire = false) => {
+const attributes = (cookie: SeedpodsParsedCookieOptions, expire = false) => {
   const array: string[] = []
 
   if (cookie.domain !== undefined) {
@@ -103,8 +104,8 @@ const attributes = (cookie: CookieOptionsParsed<string, CookieType, unknown>, ex
   return array.length === 0 ? '' : `; ${array.join('; ')}`
 }
 
-export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
-  options: CookieOptions<KEY, TYPE, VALUE>,
+export const cookie = <KEY extends string, TYPE extends SeedpodsCookieType, VALUE>(
+  options: SeedpodsCookieOptionsForType<KEY, TYPE>,
 ): Cookie<KEY, TYPE, VALUE> => {
   const cookie = parseCookieOptions(options)
 
@@ -127,7 +128,7 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
           return indecipherable
         }
 
-        const value: CookieValue | undefined = decode(result.value)
+        const value: SeedpodsCookieValue | undefined = decode(result.value)
 
         if (value === undefined) {
           return indecipherable
@@ -177,7 +178,7 @@ export const cookie = <KEY extends string, TYPE extends CookieType, VALUE>(
 
 export function assertCookie(
   cookie: unknown,
-): asserts cookie is Cookie<string, CookieType, unknown> {
+): asserts cookie is Cookie<string, SeedpodsCookieType, unknown> {
   if (
     typeof cookie !== 'object' ||
     typeof (cookie as Record<string | symbol, unknown>)[SYMBOL_COOKIE] !== 'object'
