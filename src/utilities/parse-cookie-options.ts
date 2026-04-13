@@ -85,7 +85,7 @@ function validateCookieDomain(value: unknown, causes: SeedpodsErrorCause[]): str
 }
 
 function validateCookieBoolean(
-  option: 'httpOnly' | 'secure',
+  option: 'httpOnly' | 'partitioned' | 'secure',
   value: unknown,
   causes: SeedpodsErrorCause[],
 ): boolean | undefined {
@@ -434,10 +434,19 @@ export const parseCookieOptions = <
   const cookieHttpOnly = validateCookieBoolean('httpOnly', value.httpOnly, causes)
   const cookieKeys = validateCookieKeys(value.keys, cookieType, causes)
   const cookieMaxAge = validateCookieMaxAge(value.maxAge, causes)
+  const cookiePartitioned = validateCookieBoolean('partitioned', value.partitioned, causes)
   const cookiePath = validateCookiePath(value.path, causes)
   const cookiePrefix = validateCookiePrefix(value.prefix, causes)
   const cookieSameSite = validateCookieSameSite(value.sameSite, causes)
   const cookieSecure = validateCookieBoolean('secure', value.secure, causes)
+
+  if (cookiePartitioned === true && cookieSecure !== true) {
+    causes.push({
+      option: 'partitioned',
+      reason: 'must not be true unless "secure" is true',
+      type: 'CookieOptionValueInvalid',
+    })
+  }
 
   if (cookieSameSite === 'None' && cookieSecure !== true) {
     causes.push({
@@ -482,6 +491,7 @@ export const parseCookieOptions = <
     keys: cookieKeys,
     ...(cookieMaxAge === undefined ? {} : { maxAge: cookieMaxAge }),
     name: effectiveCookieName!,
+    ...(cookiePartitioned === true ? { partitioned: true } : {}),
     ...(cookiePath === undefined ? {} : { path: cookiePath }),
     ...(cookiePrefix === undefined ? {} : { prefix: cookiePrefix }),
     ...(cookieSameSite === undefined ? {} : { sameSite: cookieSameSite }),

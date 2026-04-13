@@ -9,6 +9,7 @@ export const SEEDPODS_COOKIE_OPTION_KEY_SET = new Set<string>([
   'keys',
   'maxAge',
   'name',
+  'partitioned',
   'path',
   'prefix',
   'sameSite',

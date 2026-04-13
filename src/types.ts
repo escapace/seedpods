@@ -94,6 +94,14 @@ export interface SeedpodsCookieOptionsBase<SeedpodsCookieKey extends string = st
   sameSite?: SeedpodsCookieSameSite
 
   /**
+   * Whether the cookie should opt in to partitioned storage where supported.
+   *
+   * @remarks
+   * `partitioned: true` requires `secure: true`.
+   */
+  partitioned?: boolean
+
+  /**
    * Whether the cookie requires a secure transport.
    */
   secure?: boolean

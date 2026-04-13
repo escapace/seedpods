@@ -50,6 +50,10 @@ const attributes = (cookie: SeedpodsParsedCookieOptions, expire = false) => {
     array.push('Secure')
   }
 
+  if (cookie.partitioned === true) {
+    array.push('Partitioned')
+  }
+
   return array.length === 0 ? '' : `; ${array.join('; ')}`
 }
 

@@ -254,6 +254,7 @@ describe('parse-cookie-options', () => {
       key: 'session',
       keys: [hmacKey],
       maxAge: 1.5,
+      partitioned: 'true',
       sameSite: 'Later',
       secure: 1,
       type: 'hmac',
@@ -261,6 +262,7 @@ describe('parse-cookie-options', () => {
 
     assertHasCause(error, 'CookieOptionTypeInvalid', (cause) => cause.option === 'httpOnly')
     assertHasCause(error, 'CookieOptionValueInvalid', (cause) => cause.option === 'maxAge')
+    assertHasCause(error, 'CookieOptionTypeInvalid', (cause) => cause.option === 'partitioned')
     assertHasCause(error, 'CookieOptionValueInvalid', (cause) => cause.option === 'sameSite')
     assertHasCause(error, 'CookieOptionTypeInvalid', (cause) => cause.option === 'secure')
   })
@@ -332,6 +334,46 @@ describe('parse-cookie-options', () => {
         type: 'hmac',
       }).sameSite,
       'None',
+    )
+  })
+
+  it('requires secure when partitioned is true', () => {
+    const missingSecureError = expectSeedpodsError({
+      key: 'session',
+      keys: [hmacKey],
+      partitioned: true,
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      missingSecureError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'partitioned' && cause.reason.includes('secure'),
+    )
+
+    const falseSecureError = expectSeedpodsError({
+      key: 'session',
+      keys: [hmacKey],
+      partitioned: true,
+      secure: false,
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      falseSecureError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'partitioned' && cause.reason.includes('secure'),
+    )
+
+    assert.equal(
+      parseCookieOptions({
+        key: 'session',
+        keys: [hmacKey],
+        partitioned: true,
+        secure: true,
+        type: 'hmac',
+      }).partitioned,
+      true,
     )
   })
 
@@ -645,6 +687,7 @@ describe('parse-cookie-options', () => {
       key: 'session',
       keys: [hmacKey],
       maxAge: 60,
+      partitioned: false,
       secure: false,
       type: 'hmac',
     })
@@ -687,10 +730,19 @@ describe('parse-cookie-options', () => {
       type: 'hmac',
     })
 
+    const partitioned = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      partitioned: true,
+      secure: true,
+      type: 'hmac',
+    })
+
     assert.notEqual(await policyFingerprint(base), await policyFingerprint(secure))
     assert.notEqual(await policyFingerprint(base), await policyFingerprint(httpOnly))
     assert.notEqual(await policyFingerprint(base), await policyFingerprint(sameSite))
     assert.notEqual(await policyFingerprint(base), await policyFingerprint(maxAge))
+    assert.notEqual(await policyFingerprint(base), await policyFingerprint(partitioned))
   })
 
   it('does not include cookie identity and scope fields in the policy fingerprint', async () => {

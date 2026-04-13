@@ -1,6 +1,6 @@
 # seedpods
 
-Define cookies once as named values in application code, choose signing or encryption, provide multiple keys for rotation, and set transport attributes such as path, domain, SameSite, HttpOnly, Secure, and Max-Age. The library reads them from the incoming `Cookie` header, returns a typed cookie interface for getting, setting, and deleting values, and emits only the changed `Set-Cookie` headers for the response. Cookie definitions can be grouped into reusable jars and combined across modules.
+Define cookies once as named values in application code, choose signing or encryption, provide multiple keys for rotation, and set transport attributes such as path, domain, SameSite, HttpOnly, Secure, Partitioned, and Max-Age. The library reads them from the incoming `Cookie` header, returns a typed cookie interface for getting, setting, and deleting values, and emits only the changed `Set-Cookie` headers for the response. Cookie definitions can be grouped into reusable jars and combined across modules.
 
 ## Install
 
@@ -89,13 +89,14 @@ export async function handleRequest(request: Request) {
 - Different cookie definitions may still share one cookie name when the decoded value carries a different logical key.
 - A reducer may return `undefined` to delete a cookie. If a reducer throws, that update is aborted and the earlier state is preserved.
 - `Domain` must be an ASCII host name. Internationalized domains must use their ASCII form, for example `xn--bcher-kva.example` instead of `bücher.example`.
-- Reading a cookie with a fallback key causes the next output to write it back with the first configured key. Reading a cookie whose transport policy differs from the current definition rewrites it with the current `maxAge`, `sameSite`, `httpOnly`, and `secure` attributes. Some rewrites take effect only when the user agent accepts the `Set-Cookie` header for that response. Under [`rfc6265bis`](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html), `SameSite=Lax` and `SameSite=Strict` cookies are not set in responses to cross-site subresource requests or cross-site nested navigations. Changes to `name`, `prefix`, `domain`, and `path` are not migrated automatically.
+- `partitioned: true` requires `secure: true`. Browsers enforce partitioned storage semantics; seedpods only emits the `Partitioned` attribute.
+- Reading a cookie with a fallback key causes the next output to write it back with the first configured key. Reading a cookie whose transport policy differs from the current definition rewrites it with the current `maxAge`, `sameSite`, `httpOnly`, `secure`, and `partitioned` attributes. Some rewrites take effect only when the user agent accepts the `Set-Cookie` header for that response. Under [`rfc6265bis`](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html), `SameSite=Lax` and `SameSite=Strict` cookies are not set in responses to cross-site subresource requests or cross-site nested navigations. Changes to `name`, `prefix`, `domain`, and `path` are not migrated automatically.
 - If a configured cookie cannot be verified or decoded, `get()` returns `undefined` and the next output expires it.
 - `values()` and `entries()` emit only changes. Deleting an already unset cookie records no new change, and unchanged values do not produce a `Set-Cookie` header.
 
 # API
 
-## function assertCookie [↗](src/create-cookie.ts#L156-L170 'assertCookie')
+## function assertCookie [↗](src/create-cookie.ts#L160-L174 'assertCookie')
 
 Asserts that a value was created by [createCookie](#function-createcookie-).
 
@@ -133,7 +134,7 @@ export declare function assertJar(value: unknown): asserts value is SeedpodsJarI
 
 [SeedpodsError](#class-seedpodserror-) When the value is not a cookie jar created by this package.
 
-## function createCookie [↗](src/create-cookie.ts#L69-L148 'createCookie')
+## function createCookie [↗](src/create-cookie.ts#L73-L152 'createCookie')
 
 Creates a cookie definition for one application value.
 
@@ -370,7 +371,7 @@ constructor(causes: ReadonlyArray<SeedpodsErrorCause<T>>);
 | --------- | ------------------------------------------------------------------------------------------------------- |
 | `causes`  | <pre>ReadonlyArray<[SeedpodsErrorCause](#type-seedpodserrorcause- 'type SeedpodsErrorCause')\<T>></pre> |
 
-## interface SeedpodsCookie [↗](src/types.ts#L258-L268 'SeedpodsCookie')
+## interface SeedpodsCookie [↗](src/types.ts#L266-L276 'SeedpodsCookie')
 
 Cookie definition returned by [createCookie](#function-createcookie-).
 
@@ -390,7 +391,7 @@ export interface SeedpodsCookie<T extends string = any, U extends SeedpodsCookie
 
 Most callers create values of this type through `createCookie` and then add them to a jar with [createJar](#function-createjar-).
 
-## interface SeedpodsCookieOptionsBase [↗](src/types.ts#L52-L100 'SeedpodsCookieOptionsBase')
+## interface SeedpodsCookieOptionsBase [↗](src/types.ts#L52-L108 'SeedpodsCookieOptionsBase')
 
 Common cookie options shared by all cookie definitions.
 
@@ -444,6 +445,18 @@ Cookie name written to the header. When omitted, the key is used.
 name?: string;
 ```
 
+### SeedpodsCookieOptionsBase.partitioned
+
+Whether the cookie should opt in to partitioned storage where supported.
+
+```typescript
+partitioned?: boolean;
+```
+
+#### Remarks
+
+`partitioned: true` requires `secure: true`.
+
 ### SeedpodsCookieOptionsBase.path
 
 Path attribute written to `Set-Cookie`.
@@ -480,7 +493,7 @@ Whether the cookie requires a secure transport.
 secure?: boolean;
 ```
 
-## interface SeedpodsCookies [↗](src/types.ts#L426-L456 'SeedpodsCookies')
+## interface SeedpodsCookies [↗](src/types.ts#L434-L464 'SeedpodsCookies')
 
 Mutable cookie interface returned by [useCookies](#function-usecookies-).
 
@@ -536,7 +549,7 @@ Returns changed `Set-Cookie` header values.
 values: () => Promise<string[]>
 ```
 
-## interface SeedpodsDeriveKeyOptions [↗](src/types.ts#L461-L479 'SeedpodsDeriveKeyOptions')
+## interface SeedpodsDeriveKeyOptions [↗](src/types.ts#L469-L487 'SeedpodsDeriveKeyOptions')
 
 Options for [deriveKey](#function-derivekey-).
 
@@ -572,7 +585,7 @@ Salt used for key derivation.
 salt?: string;
 ```
 
-## interface SeedpodsEncryptedCookieOptions [↗](src/types.ts#L110-L122 'SeedpodsEncryptedCookieOptions')
+## interface SeedpodsEncryptedCookieOptions [↗](src/types.ts#L118-L130 'SeedpodsEncryptedCookieOptions')
 
 Options for an encrypted cookie definition.
 
@@ -607,7 +620,7 @@ Encryption mode.
 type: 'aes-gcm'
 ```
 
-## interface SeedpodsErrorMetadata [↗](src/types.ts#L192-L201 'SeedpodsErrorMetadata')
+## interface SeedpodsErrorMetadata [↗](src/types.ts#L200-L209 'SeedpodsErrorMetadata')
 
 Structured data carried by each [SeedpodsError](#class-seedpodserror-) cause type.
 
@@ -615,7 +628,7 @@ Structured data carried by each [SeedpodsError](#class-seedpodserror-) cause typ
 export interface SeedpodsErrorMetadata
 ```
 
-## interface SeedpodsJar [↗](src/types.ts#L371-L393 'SeedpodsJar')
+## interface SeedpodsJar [↗](src/types.ts#L379-L401 'SeedpodsJar')
 
 Cookie jar returned by [createJar](#function-createjar-).
 
@@ -659,7 +672,7 @@ put: <SeedpodsCookieTypeValue extends SeedpodsCookie>(cookie: SeedpodsCookieType
   >
 ```
 
-## interface SeedpodsSignedCookieOptions [↗](src/types.ts#L132-L144 'SeedpodsSignedCookieOptions')
+## interface SeedpodsSignedCookieOptions [↗](src/types.ts#L140-L152 'SeedpodsSignedCookieOptions')
 
 Options for a signed cookie definition.
 
@@ -694,7 +707,7 @@ Signing mode.
 type: 'hmac'
 ```
 
-## type SeedpodsCookieHeader [↗](src/types.ts#L398 'SeedpodsCookieHeader')
+## type SeedpodsCookieHeader [↗](src/types.ts#L406 'SeedpodsCookieHeader')
 
 Raw `Cookie` header value accepted by [useCookies](#function-usecookies-).
 
@@ -702,7 +715,7 @@ Raw `Cookie` header value accepted by [useCookies](#function-usecookies-).
 export type SeedpodsCookieHeader = string | undefined
 ```
 
-## type SeedpodsCookieOptions [↗](src/types.ts#L151-L153 'SeedpodsCookieOptions')
+## type SeedpodsCookieOptions [↗](src/types.ts#L159-L161 'SeedpodsCookieOptions')
 
 Supported options accepted by [createCookie](#function-createcookie-).
 
@@ -738,7 +751,7 @@ Supported `SameSite` attribute values for cookie definitions.
 export type SeedpodsCookieSameSite = (typeof SEEDPODS_COOKIE_SAME_SITE_VALUES)[number]
 ```
 
-## type SeedpodsCookiesReducer [↗](src/types.ts#L405-L408 'SeedpodsCookiesReducer')
+## type SeedpodsCookiesReducer [↗](src/types.ts#L413-L416 'SeedpodsCookiesReducer')
 
 Reducer used to combine the current and next value for one cookie key.
 
@@ -755,7 +768,7 @@ export type SeedpodsCookiesReducer<SeedpodsValue> = (
 | --------------- | ------------------ |
 | `SeedpodsValue` | Cookie value type. |
 
-## type SeedpodsCookiesReducers [↗](src/types.ts#L415-L419 'SeedpodsCookiesReducers')
+## type SeedpodsCookiesReducers [↗](src/types.ts#L423-L427 'SeedpodsCookiesReducers')
 
 Reducer map accepted by [useCookies](#function-usecookies-).
 
@@ -785,7 +798,7 @@ export type SeedpodsCookieType = (typeof SEEDPODS_COOKIE_TYPES)[number]
 
 `'aes-gcm'` encrypts and authenticates the cookie value. `'hmac'` signs the value without encrypting it.
 
-## type SeedpodsErrorCause [↗](src/types.ts#L208-L209 'SeedpodsErrorCause')
+## type SeedpodsErrorCause [↗](src/types.ts#L216-L217 'SeedpodsErrorCause')
 
 Machine-readable error detail carried by [SeedpodsError](#class-seedpodserror-).
 

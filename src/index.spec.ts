@@ -73,6 +73,15 @@ const ball = createCookie({
   type: 'hmac',
 })
 
+const crumb = createCookie<'crumb', 'hmac', string>({
+  key: 'crumb',
+  keys: [keyA],
+  partitioned: true,
+  sameSite: 'None',
+  secure: true,
+  type: 'hmac',
+})
+
 const childSeedpodsJar = createJar().put(dazzle).put(ball)
 const seedpodsJar = createJar().put(vixen).put(tycho).combine(childSeedpodsJar)
 const malformedHmacCookieValues = ['a.b', 'abc.def', 'AQ.b', 'Zm8.YQ', 'hello.world', 'AA.BB']
@@ -133,6 +142,29 @@ describe('createCookie', () => {
     assert.equal(
       await vixen[SEEDPODS_SYMBOL_COOKIE].toString(state),
       '__Secure-vixen=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure',
+    )
+  })
+
+  it('serializes partitioned cookies as a flag attribute on set and expire', async () => {
+    const setState: SeedpodsCookieState = {
+      type: SeedpodsCookieStateType.Set,
+      value: 'value',
+    }
+
+    const expiredState: SeedpodsCookieState = {
+      type: SeedpodsCookieStateType.Expired,
+    }
+
+    const setCookieValue = await crumb[SEEDPODS_SYMBOL_COOKIE].toString(setState)
+    const expiredCookieValue = await crumb[SEEDPODS_SYMBOL_COOKIE].toString(expiredState)
+
+    assert.include(setCookieValue!, 'SameSite=None')
+    assert.include(setCookieValue!, 'Secure')
+    assert.include(setCookieValue!, 'Partitioned')
+    assert.notInclude(setCookieValue!, 'Partitioned=')
+    assert.equal(
+      expiredCookieValue,
+      'crumb=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; SameSite=None; Secure; Partitioned',
     )
   })
 })
@@ -241,6 +273,72 @@ describe('useCookies', () => {
     assert.lengthOf(values, 1)
     assert.include(values[0], 'SameSite=Strict')
     assert.notInclude(values[0], 'SameSite=Lax')
+  })
+
+  it('rewrites cookies when the partitioned flag changes', async () => {
+    const previous = createCookie<'crumb', 'hmac', string>({
+      key: 'crumb',
+      keys: [keyA],
+      sameSite: 'None',
+      secure: true,
+      type: 'hmac',
+    })
+
+    const current = createCookie<'crumb', 'hmac', string>({
+      key: 'crumb',
+      keys: [keyA],
+      partitioned: true,
+      sameSite: 'None',
+      secure: true,
+      type: 'hmac',
+    })
+
+    const header = `crumb=${(await toHmac(
+      (await encodeWithPolicy('value', previous[SEEDPODS_SYMBOL_COOKIE].options))!,
+      previous[SEEDPODS_SYMBOL_COOKIE].options.keys,
+    ))!}`
+
+    const cookies = await useCookies(header, createJar().put(current))
+
+    assert.equal(cookies.get('crumb'), 'value')
+
+    const values = await cookies.values()
+
+    assert.lengthOf(values, 1)
+    assert.include(values[0], 'Partitioned')
+  })
+
+  it('rewrites cookies when the partitioned flag is removed', async () => {
+    const previous = createCookie<'crumb', 'hmac', string>({
+      key: 'crumb',
+      keys: [keyA],
+      partitioned: true,
+      sameSite: 'None',
+      secure: true,
+      type: 'hmac',
+    })
+
+    const current = createCookie<'crumb', 'hmac', string>({
+      key: 'crumb',
+      keys: [keyA],
+      sameSite: 'None',
+      secure: true,
+      type: 'hmac',
+    })
+
+    const header = `crumb=${(await toHmac(
+      (await encodeWithPolicy('value', previous[SEEDPODS_SYMBOL_COOKIE].options))!,
+      previous[SEEDPODS_SYMBOL_COOKIE].options.keys,
+    ))!}`
+
+    const cookies = await useCookies(header, createJar().put(current))
+
+    assert.equal(cookies.get('crumb'), 'value')
+
+    const values = await cookies.values()
+
+    assert.lengthOf(values, 1)
+    assert.notInclude(values[0], 'Partitioned')
   })
 
   it('reads, merges, writes, and deletes cookie values', async () => {
