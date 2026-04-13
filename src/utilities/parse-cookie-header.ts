@@ -5,6 +5,15 @@
  *
  */
 
+/**
+ * Parses a `Cookie` header value into a map of cookie names and values.
+ *
+ * @remarks
+ * Repeated cookie names are preserved in encounter order. Surrounding double quotes are stripped from quoted values. Fragments without an equals sign are ignored. When the input is `undefined`, the function returns an empty map.
+ *
+ * @param string - Raw `Cookie` header value.
+ * @returns A map from each cookie name to all received values for that name.
+ */
 export function parseCookieHeader(string?: string) {
   const map = new Map<string, string[]>()
 
@@ -42,7 +51,6 @@ export function parseCookieHeader(string?: string) {
     }
 
     if (map.has(key)) {
-       
       const array = map.get(key)!
       array.push(value)
     } else {

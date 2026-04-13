@@ -19,7 +19,6 @@
     "@commitlint/config-conventional": "20.5.0",
     "@escapace/pnpm-pack": "0.8.0",
     "@escapace/syncpack-configuration": "0.1.0",
-    "@escapace/typelevel": "2.0.3",
     "@ls-lint/ls-lint": "2.3.1",
     "@types/node": "24.9.2",
     "@vitest/coverage-v8": "4.1.2",
@@ -53,9 +52,6 @@
   "homepage": "https://github.com/escapace/seedpods#readme",
   "license": "MPL-2.0",
   "module": "./lib/node/index.js",
-  "peerDependencies": {
-    "@escapace/typelevel": "^2.0.3"
-  },
   "private": false,
   "publishConfig": {
     "access": "public",

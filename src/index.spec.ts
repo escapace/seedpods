@@ -1,8 +1,11 @@
 import { assert, describe, it } from 'vitest'
-import { cookie, SYMBOL_COOKIE } from './cookie'
+import { isSeedpodsError } from './error'
+import { createCookie, SEEDPODS_SYMBOL_COOKIE } from './create-cookie'
 import { to as toAesGcm } from './cookie-type/aes-gcm'
-import { jar, SYMBOL_JAR, TypeAction } from './jar'
-import { take } from './take'
+import { to as toHmac } from './cookie-type/hmac'
+import { assertJar, createJar, SEEDPODS_SYMBOL_JAR } from './create-jar'
+import { useCookies } from './use-cookies'
+import { type SeedpodsCookieState, SeedpodsCookieStateType } from './types'
 import { deriveKey } from './utilities/derive-key'
 import { encode } from './utilities/encode'
 
@@ -11,7 +14,7 @@ const keyB = await deriveKey('key-b', { iterations: 1 })
 const keyC = await deriveKey('key-c', { iterations: 1 })
 const keyD = await deriveKey('key-d', { iterations: 1 })
 
-const vixen = cookie({
+const vixen = createCookie({
   key: 'vixen',
   keys: [keyA, keyC],
   maxAge: 86_400,
@@ -21,7 +24,7 @@ const vixen = cookie({
   type: 'aes-gcm',
 })
 
-const vixenTwo = cookie({
+const vixenTwo = createCookie({
   key: 'vixenTwo',
   keys: [keyB],
   maxAge: 86_400,
@@ -33,7 +36,7 @@ const vixenTwo = cookie({
   type: 'aes-gcm',
 })
 
-const vixenThree = cookie({
+const vixenThree = createCookie({
   domain: 'example.com',
   key: 'vixenThree',
   keys: [keyC],
@@ -44,7 +47,7 @@ const vixenThree = cookie({
   type: 'aes-gcm',
 })
 
-const tycho = cookie<'tycho', 'aes-gcm', string[]>({
+const tycho = createCookie<'tycho', 'aes-gcm', string[]>({
   domain: 'example.com',
   key: 'tycho',
   keys: [keyB, keyA],
@@ -52,16 +55,15 @@ const tycho = cookie<'tycho', 'aes-gcm', string[]>({
   type: 'aes-gcm',
 })
 
-const dazzle = cookie<'dazzle', 'hmac', number>({
+const dazzle = createCookie<'dazzle', 'hmac', number>({
   httpOnly: true,
   key: 'dazzle',
-  // expires: new Date('2023-01-11'),
   keys: [keyC, keyB],
   sameSite: 'Lax',
   type: 'hmac',
 })
 
-const ball = cookie({
+const ball = createCookie({
   key: 'ball',
   keys: [keyD],
   path: '/',
@@ -70,22 +72,56 @@ const ball = cookie({
   type: 'hmac',
 })
 
-const cookieJarChild = jar().put(dazzle).put(ball)
-const cookieJar = jar().put(vixen).put(tycho).combine(cookieJarChild)
+const childSeedpodsJar = createJar().put(dazzle).put(ball)
+const seedpodsJar = createJar().put(vixen).put(tycho).combine(childSeedpodsJar)
 
-describe('jar', () => {
-  it('.', () => {
-    assert.isFunction(jar)
-    assert.hasAllKeys(jar(), ['put', 'combine'])
+describe('createCookie', () => {
+  it('treats undecodable payloads as indecipherable', async () => {
+    const cookieValue = await toHmac(Buffer.from('not-json'), [keyC, keyB])
 
-    assert.hasAllKeys(cookieJar, ['put', 'combine', SYMBOL_JAR])
+    const state = await dazzle[SEEDPODS_SYMBOL_COOKIE].fromString(cookieValue)
 
-    assert.deepStrictEqual(cookieJar[SYMBOL_JAR], {
-      log: [
-        { payload: cookieJarChild, type: TypeAction.Combine },
-        { payload: tycho, type: TypeAction.Cookie },
-        { payload: vixen, type: TypeAction.Cookie },
-      ],
+    assert.deepEqual(state, { type: SeedpodsCookieStateType.Indecipherable })
+  })
+
+  it('returns undefined when asked to serialize an undefined set value', async () => {
+    const state: SeedpodsCookieState = {
+      type: SeedpodsCookieStateType.Set,
+      value: undefined,
+    }
+
+    const cookieValue = await vixen[SEEDPODS_SYMBOL_COOKIE].toString(state)
+
+    assert.equal(cookieValue, undefined)
+  })
+
+  it('serializes cookies without attributes when none are configured', async () => {
+    const plain = createCookie<'plain', 'hmac', string>({
+      key: 'plain',
+      keys: [keyA],
+      type: 'hmac',
+    })
+
+    const state: SeedpodsCookieState = {
+      type: SeedpodsCookieStateType.Set,
+      value: 'value',
+    }
+
+    const cookieValue = await plain[SEEDPODS_SYMBOL_COOKIE].toString(state)
+
+    assert.match(cookieValue!, /^plain=/)
+    assert.notInclude(cookieValue!, '; ')
+  })
+})
+
+describe('createJar', () => {
+  it('creates jars with the expected runtime shape', () => {
+    assert.isFunction(createJar)
+    assert.hasAllKeys(createJar(), ['put', 'combine'])
+
+    assert.hasAllKeys(seedpodsJar, ['put', 'combine', SEEDPODS_SYMBOL_JAR])
+
+    assert.deepStrictEqual(seedpodsJar[SEEDPODS_SYMBOL_JAR], {
       state: {
         cookies: {
           ball,
@@ -100,28 +136,39 @@ describe('jar', () => {
   it('fails', () => {
     assert.throw(
       // @ts-expect-error test
-      () => jar().put(vixen).put(tycho).put(dazzle).put({}),
-      /not a cookie/i,
+      () => createJar().put(vixen).put(tycho).put(dazzle).put({}),
+      /expected a cookie/i,
     )
+  })
+
+  it('rejects values that are not jars', () => {
+    try {
+      assertJar(undefined)
+      assert.fail('Expected assertJar to throw.')
+    } catch (error) {
+      assert.ok(isSeedpodsError(error))
+      assert.include(error.message, 'Expected a cookie jar.')
+      assert.deepEqual(error.causes, [{ actual: undefined, type: 'JarExpected' }])
+    }
   })
 })
 
-describe('take', () => {
+describe('useCookies', () => {
   it('returns the expected interface', async () => {
-    assert.isFunction(take)
-    assert.hasAllKeys(await take('', cookieJar), ['del', 'get', 'set', 'values', 'entries'])
+    assert.isFunction(useCookies)
+    assert.hasAllKeys(await useCookies('', seedpodsJar), ['del', 'get', 'set', 'values', 'entries'])
   })
 
   it('reads, merges, writes, and deletes cookie values', async () => {
     const cookieHeader = `__Secure-vixen=${(await toAesGcm(
-      encode({ author: 'escape', change: 'triangle' }, vixen[SYMBOL_COOKIE].options)!,
+      encode({ author: 'escape', change: 'triangle' }, vixen[SEEDPODS_SYMBOL_COOKIE].options)!,
       [keyC],
     ))!}; tycho=${(await toAesGcm(
-      encode(['threw', 'satellites', 'class'], tycho[SYMBOL_COOKIE].options)!,
+      encode(['threw', 'satellites', 'class'], tycho[SEEDPODS_SYMBOL_COOKIE].options)!,
       [keyB, keyA],
     ))!}; __Host-ball=${Buffer.from('ride problem cause market').toString('base64url')}; abc=qwe`
 
-    const t = await take(cookieHeader, cookieJar, {
+    const t = await useCookies(cookieHeader, seedpodsJar, {
       tycho(previous?: string[], next?: string[]): string[] {
         return [...(previous ?? []), ...(next ?? [])]
       },
@@ -202,14 +249,13 @@ describe('take', () => {
     assert.throws(() => t.get('abc'))
   })
 
-  it('same key cookies', () => {
+  it('rejects duplicate cookie keys', () => {
     assert.throws(() => {
-      jar()
+      createJar()
         .put(vixen)
         .put(
-          cookie({
+          createCookie({
             key: 'vixen',
-            // maxAge: 86400,
             keys: [keyA, keyC],
             prefix: '__Secure-',
             secure: true,
@@ -219,25 +265,26 @@ describe('take', () => {
     })
   })
 
-  it('same name cookies', async () => {
-    const jarr = jar().put(vixen).put(vixenTwo).put(vixenThree)
+  it('handles cookies that share a name', async () => {
+    const seedpodsJarWithSharedCookieName = createJar().put(vixen).put(vixenTwo).put(vixenThree)
 
     const cookieHeader = [
-      `__Secure-vixen=${(await toAesGcm(encode({ key: 'vixen' }, vixen[SYMBOL_COOKIE].options)!, [
-        keyC,
-      ]))!}`,
+      `__Secure-vixen=${(await toAesGcm(
+        encode({ key: 'vixen' }, vixen[SEEDPODS_SYMBOL_COOKIE].options)!,
+        [keyC],
+      ))!}`,
       'qweqweqwe=123',
       `__Secure-vixen=${(await toAesGcm(
-        encode({ key: 'vixenTwo' }, vixenTwo[SYMBOL_COOKIE].options)!,
+        encode({ key: 'vixenTwo' }, vixenTwo[SEEDPODS_SYMBOL_COOKIE].options)!,
         [keyB],
       ))!}`,
       `__Secure-vixen=${(await toAesGcm(
-        encode({ key: 'vixenThree' }, vixenThree[SYMBOL_COOKIE].options)!,
+        encode({ key: 'vixenThree' }, vixenThree[SEEDPODS_SYMBOL_COOKIE].options)!,
         [keyC],
       ))!}`,
     ].join('; ')
 
-    const t = await take(cookieHeader, jarr)
+    const t = await useCookies(cookieHeader, seedpodsJarWithSharedCookieName)
 
     const values = await t.values()
 

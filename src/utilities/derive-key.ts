@@ -1,10 +1,19 @@
-interface DeriveOptions {
-  iterations?: number
-  length?: number
-  salt?: string
-}
+import type { SeedpodsDeriveKeyOptions } from '../types'
 
-export const deriveKey = async (secret: string, options?: DeriveOptions): Promise<Buffer> => {
+/**
+ * Derives a symmetric key from a secret string.
+ *
+ * @remarks
+ * The function uses Password-Based Key Derivation Function 2 with SHA-512 and returns raw key bytes. Pass a fixed salt when the same secret must produce the same key across processes or deployments. When no salt is provided, a random salt is generated and the derived key changes between calls.
+ *
+ * @param secret - Secret input used as the derivation source.
+ * @param options - Optional derivation parameters, including salt and iteration count.
+ * @returns The derived key bytes.
+ */
+export const deriveKey = async (
+  secret: string,
+  options?: SeedpodsDeriveKeyOptions,
+): Promise<Buffer> => {
   const passphraseKey = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),

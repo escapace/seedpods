@@ -1,5 +1,6 @@
 import { assert, describe, it } from 'vitest'
-import { SeedpodsError, getSeedpodsErrorCausesOfType, type SeedpodsErrorCause } from '../error'
+import { SeedpodsError, getSeedpodsErrorCausesByType } from '../error'
+import type { SeedpodsErrorCause } from '../types'
 import { parseCookieOptions, parseCookieValue } from './parse-cookie-options'
 
 const aesKey = Buffer.alloc(32, 1)
@@ -20,7 +21,7 @@ function findCause<T extends SeedpodsErrorCause['type']>(
   type: T,
   predicate: (cause: SeedpodsErrorCause<T>) => boolean,
 ): SeedpodsErrorCause<T> | undefined {
-  return getSeedpodsErrorCausesOfType(error, type).find((cause) => predicate(cause))
+  return getSeedpodsErrorCausesByType(error, type).find((cause) => predicate(cause))
 }
 
 function assertHasCause<T extends SeedpodsErrorCause['type']>(

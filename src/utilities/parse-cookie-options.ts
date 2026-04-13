@@ -1,102 +1,21 @@
-import { SeedpodsError, type SeedpodsErrorCause } from '../error'
-
-const COOKIE_TOKEN_REGEXP = /^(?=[\x20-\x7E]*$)[^\s"(),:;<=>?@[\\\]{}]+$/
-const COOKIE_OPTION_KEYS = [
-  'domain',
-  'httpOnly',
-  'key',
-  'keys',
-  'maxAge',
-  'name',
-  'path',
-  'prefix',
-  'sameSite',
-  'secure',
-  'type',
-] as const
-const COOKIE_OPTION_KEY_SET = new Set<string>(COOKIE_OPTION_KEYS)
-const COOKIE_PREFIXES = ['__Secure-', '__Host-'] as const
-const COOKIE_SAME_SITE_VALUES = ['Strict', 'Lax', 'None'] as const
-const COOKIE_TYPES = ['aes-gcm', 'hmac'] as const
-
-export type SeedpodsCookiePrefix = (typeof COOKIE_PREFIXES)[number]
-export type SeedpodsCookieSameSite = (typeof COOKIE_SAME_SITE_VALUES)[number]
-export type SeedpodsCookieType = (typeof COOKIE_TYPES)[number]
-
-interface SeedpodsCookieValueOptions {
-  key: string
-  maxAge?: number
-}
-
-export interface SeedpodsCookieValue {
-  options: SeedpodsCookieValueOptions
-  value: unknown
-}
-
-export interface SeedpodsCookieOptionsBase<SeedpodsCookieKey extends string = string> {
-  key: SeedpodsCookieKey
-  domain?: string
-  httpOnly?: boolean
-  maxAge?: number
-  name?: string
-  path?: string
-  prefix?: SeedpodsCookiePrefix
-  sameSite?: SeedpodsCookieSameSite
-  secure?: boolean
-}
-
-export interface SeedpodsEncryptedCookieOptions<
-  SeedpodsCookieKey extends string = string,
-> extends SeedpodsCookieOptionsBase<SeedpodsCookieKey> {
-  keys: Buffer[]
-  type: 'aes-gcm'
-}
-
-export interface SeedpodsSignedCookieOptions<
-  SeedpodsCookieKey extends string = string,
-> extends SeedpodsCookieOptionsBase<SeedpodsCookieKey> {
-  keys: Buffer[]
-  type: 'hmac'
-}
-
-export type SeedpodsCookieOptions<SeedpodsCookieKey extends string = string> =
-  | SeedpodsEncryptedCookieOptions<SeedpodsCookieKey>
-  | SeedpodsSignedCookieOptions<SeedpodsCookieKey>
-
-interface SeedpodsParsedCookieOptionsBase<SeedpodsCookieKey extends string = string> extends Omit<
-  SeedpodsCookieOptionsBase<SeedpodsCookieKey>,
-  'name'
-> {
-  name: string
-}
-
-export interface SeedpodsParsedEncryptedCookieOptions<
-  SeedpodsCookieKey extends string = string,
-> extends SeedpodsParsedCookieOptionsBase<SeedpodsCookieKey> {
-  keys: Buffer[]
-  type: 'aes-gcm'
-}
-
-export interface SeedpodsParsedSignedCookieOptions<
-  SeedpodsCookieKey extends string = string,
-> extends SeedpodsParsedCookieOptionsBase<SeedpodsCookieKey> {
-  keys: Buffer[]
-  type: 'hmac'
-}
-
-export type SeedpodsParsedCookieOptions<SeedpodsCookieKey extends string = string> =
-  | SeedpodsParsedEncryptedCookieOptions<SeedpodsCookieKey>
-  | SeedpodsParsedSignedCookieOptions<SeedpodsCookieKey>
-
-export type SeedpodsCookieOptionsForType<
-  SeedpodsCookieKey extends string = string,
-  SeedpodsCookieKind extends SeedpodsCookieType = SeedpodsCookieType,
-> = Extract<SeedpodsCookieOptions<SeedpodsCookieKey>, { type: SeedpodsCookieKind }>
-
-export type SeedpodsParsedCookieOptionsForType<
-  SeedpodsCookieKey extends string = string,
-  SeedpodsCookieKind extends SeedpodsCookieType = SeedpodsCookieType,
-> = Extract<SeedpodsParsedCookieOptions<SeedpodsCookieKey>, { type: SeedpodsCookieKind }>
+import {
+  SEEDPODS_COOKIE_OPTION_KEY_SET,
+  SEEDPODS_COOKIE_PREFIXES,
+  SEEDPODS_COOKIE_SAME_SITE_VALUES,
+  SEEDPODS_COOKIE_TOKEN_REGEXP,
+  SEEDPODS_COOKIE_TYPES,
+} from '../constants'
+import { SeedpodsError } from '../error'
+import type {
+  SeedpodsCookieOptionsForType,
+  SeedpodsCookiePrefix,
+  SeedpodsCookieSameSite,
+  SeedpodsCookieType,
+  SeedpodsCookieValue,
+  SeedpodsErrorCause,
+  SeedpodsParsedCookieOptions,
+  SeedpodsParsedCookieOptionsForType,
+} from '../types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -126,7 +45,7 @@ function validateCookieToken(
     return
   }
 
-  if (!COOKIE_TOKEN_REGEXP.test(value)) {
+  if (!SEEDPODS_COOKIE_TOKEN_REGEXP.test(value)) {
     causes.push({
       option,
       reason: 'contains characters that are not valid in a cookie token',
@@ -135,7 +54,7 @@ function validateCookieToken(
     return
   }
 
-  if (option === 'name' && COOKIE_PREFIXES.some((prefix) => value.startsWith(prefix))) {
+  if (option === 'name' && SEEDPODS_COOKIE_PREFIXES.some((prefix) => value.startsWith(prefix))) {
     causes.push({
       option,
       reason: 'must not start with the reserved "__Secure-" or "__Host-" prefixes',
@@ -321,7 +240,13 @@ function validateCookiePrefix(
   value: unknown,
   causes: SeedpodsErrorCause[],
 ): SeedpodsCookiePrefix | undefined {
-  return validateCookieLiteral('prefix', value, COOKIE_PREFIXES, '"__Secure-" or "__Host-"', causes)
+  return validateCookieLiteral(
+    'prefix',
+    value,
+    SEEDPODS_COOKIE_PREFIXES,
+    '"__Secure-" or "__Host-"',
+    causes,
+  )
 }
 
 function validateCookieSameSite(
@@ -331,7 +256,7 @@ function validateCookieSameSite(
   return validateCookieLiteral(
     'sameSite',
     value,
-    COOKIE_SAME_SITE_VALUES,
+    SEEDPODS_COOKIE_SAME_SITE_VALUES,
     '"Strict", "Lax", or "None"',
     causes,
   )
@@ -349,7 +274,7 @@ function validateCookieType(
     return
   }
 
-  return validateCookieLiteral('type', value, COOKIE_TYPES, '"aes-gcm" or "hmac"', causes)
+  return validateCookieLiteral('type', value, SEEDPODS_COOKIE_TYPES, '"aes-gcm" or "hmac"', causes)
 }
 
 function validateCookieKeys(
@@ -424,7 +349,7 @@ function parseCookieValueOptions(value: unknown): SeedpodsCookieValue['options']
   if (
     typeof value.key !== 'string' ||
     value.key.length === 0 ||
-    !COOKIE_TOKEN_REGEXP.test(value.key)
+    !SEEDPODS_COOKIE_TOKEN_REGEXP.test(value.key)
   ) {
     return
   }
@@ -480,7 +405,7 @@ export const parseCookieOptions = <
   }
 
   for (const option of Object.keys(value)) {
-    if (!COOKIE_OPTION_KEY_SET.has(option)) {
+    if (!SEEDPODS_COOKIE_OPTION_KEY_SET.has(option)) {
       causes.push({
         option,
         type: 'CookieOptionUnknown',

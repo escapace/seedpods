@@ -1,73 +1,23 @@
-export const SEEDPODS_ERROR_TYPES = [
-  'CookieOptionMissing',
-  'CookieOptionTypeInvalid',
-  'CookieOptionUnknown',
-  'CookieOptionValueInvalid',
-  'CookieOptionsExpectedObject',
-  'CookiePrefixConfigurationInvalid',
-] as const
-
-export type SeedpodsErrorType = (typeof SEEDPODS_ERROR_TYPES)[number]
-
-export interface SeedpodsErrorMetadata {
-  CookieOptionMissing: { option: string }
-  CookieOptionsExpectedObject: { actual: unknown }
-  CookieOptionTypeInvalid: { actual: unknown; expected: string; option: string }
-  CookieOptionUnknown: { option: string }
-  CookieOptionValueInvalid: { option: string; reason: string }
-  CookiePrefixConfigurationInvalid: { prefix: '__Host-' | '__Secure-'; reason: string }
-}
-
-export type SeedpodsErrorCause<T extends SeedpodsErrorType = SeedpodsErrorType> =
-  T extends SeedpodsErrorType ? { type: T } & SeedpodsErrorMetadata[T] : never
-
-function describeValue(value: unknown): string {
-  if (value === null) {
-    return 'null'
-  }
-
-  if (Array.isArray(value)) {
-    return 'an array'
-  }
-
-  if (Buffer.isBuffer(value)) {
-    return 'a Buffer'
-  }
-
-  switch (typeof value) {
-    case 'bigint':
-    case 'boolean':
-    case 'number':
-      return JSON.stringify(value)
-    case 'function':
-      return 'a function'
-    case 'object':
-      return 'an object'
-    case 'string':
-      return JSON.stringify(value)
-    case 'symbol':
-      return value.toString()
-    case 'undefined':
-      return 'undefined'
-  }
-
-  return 'an unknown value'
-}
+import type { SeedpodsErrorCause, SeedpodsErrorType } from './types'
 
 function formatCause(cause: SeedpodsErrorCause): string {
   switch (cause.type) {
+    case 'CookieExpected':
+      return 'Expected a cookie.'
     case 'CookieOptionMissing':
       return `Cookie option "${cause.option}" is required.`
     case 'CookieOptionsExpectedObject':
-      return `Cookie options must be a plain object. Received ${describeValue(cause.actual)}.`
+      return 'Cookie options must be a plain object.'
     case 'CookieOptionTypeInvalid':
-      return `Cookie option "${cause.option}" must be ${cause.expected}. Received ${describeValue(cause.actual)}.`
+      return `Cookie option "${cause.option}" must be ${cause.expected}.`
     case 'CookieOptionUnknown':
       return `Unknown cookie option "${cause.option}".`
     case 'CookieOptionValueInvalid':
       return `Cookie option "${cause.option}" ${cause.reason}.`
     case 'CookiePrefixConfigurationInvalid':
       return `Cookies with the "${cause.prefix}" prefix ${cause.reason}.`
+    case 'JarExpected':
+      return 'Expected a cookie jar.'
   }
 }
 
@@ -79,6 +29,14 @@ function formatMessage(causes: readonly SeedpodsErrorCause[]): string {
   return `Invalid seedpods input. ${causes.map((cause) => formatCause(cause)).join(' ')}`
 }
 
+/**
+ * Error thrown for invalid cookie definitions, invalid cookie values, invalid jar values, and other rejected inputs.
+ *
+ * @remarks
+ * The `causes` property stores machine-readable error details. Validation may report more than one cause in a single error.
+ *
+ * @typeParam T - Error cause type carried by the instance.
+ */
 export class SeedpodsError<T extends SeedpodsErrorType = SeedpodsErrorType> extends Error {
   readonly causes: readonly SeedpodsErrorCause[]
   readonly name = 'SeedpodsError' as const
@@ -90,18 +48,40 @@ export class SeedpodsError<T extends SeedpodsErrorType = SeedpodsErrorType> exte
   }
 }
 
+/**
+ * Checks whether a value is a {@link SeedpodsError}.
+ *
+ * @param value - Value to test.
+ * @returns `true` when the value is a `SeedpodsError`; otherwise, `false`.
+ */
 export function isSeedpodsError(value: unknown): value is SeedpodsError {
   return value instanceof SeedpodsError
 }
 
+/**
+ * Checks whether a {@link SeedpodsError} contains at least one cause of the given type.
+ *
+ * @typeParam T - Error cause type to match.
+ * @param error - Error instance to inspect.
+ * @param type - Error cause type to match.
+ * @returns `true` when the error contains at least one matching cause; otherwise, `false`.
+ */
 export function isSeedpodsErrorOfType<T extends SeedpodsErrorType>(
   error: SeedpodsError,
   type: T,
 ): error is SeedpodsError<T> {
-  return getSeedpodsErrorCausesOfType(error, type).length > 0
+  return getSeedpodsErrorCausesByType(error, type).length > 0
 }
 
-export function getSeedpodsErrorCausesOfType<T extends SeedpodsErrorType>(
+/**
+ * Returns the causes from a {@link SeedpodsError} that match the given type.
+ *
+ * @typeParam T - Error cause type to match.
+ * @param error - Error instance to inspect.
+ * @param type - Error cause type to match.
+ * @returns All matching causes in their original order.
+ */
+export function getSeedpodsErrorCausesByType<T extends SeedpodsErrorType>(
   error: SeedpodsError,
   type: T,
 ): Array<SeedpodsErrorCause<T>> {

@@ -1,5 +1,5 @@
 import { canonicalize } from '@escapace/canonicalize'
-import type { SeedpodsCookieValue, SeedpodsParsedCookieOptions } from './parse-cookie-options'
+import type { SeedpodsCookieValue, SeedpodsParsedCookieOptions } from '../types'
 
 export const encode = (
   // eslint-disable-next-line typescript/no-explicit-any
