@@ -2,6 +2,7 @@ import { assert, describe, it } from 'vitest'
 import { SeedpodsError, getSeedpodsErrorCausesByType } from '../error'
 import type { SeedpodsErrorCause } from '../types'
 import { parseCookieOptions, parseCookieValue } from './parse-cookie-options'
+import { policyFingerprint } from './policy-fingerprint'
 
 const aesKey = Buffer.alloc(32, 1)
 const hmacKey = Buffer.from('hmac-key')
@@ -245,6 +246,46 @@ describe('parse-cookie-options', () => {
     )
   })
 
+  it('requires secure when sameSite is None', () => {
+    const missingSecureError = expectSeedpodsError({
+      key: 'session',
+      keys: [hmacKey],
+      sameSite: 'None',
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      missingSecureError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'sameSite' && cause.reason.includes('secure'),
+    )
+
+    const falseSecureError = expectSeedpodsError({
+      key: 'session',
+      keys: [hmacKey],
+      sameSite: 'None',
+      secure: false,
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      falseSecureError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'sameSite' && cause.reason.includes('secure'),
+    )
+
+    assert.equal(
+      parseCookieOptions({
+        key: 'session',
+        keys: [hmacKey],
+        sameSite: 'None',
+        secure: true,
+        type: 'hmac',
+      }).sameSite,
+      'None',
+    )
+  })
+
   it('enforces secure-prefix invariants', () => {
     const secureError = expectSeedpodsError({
       key: 'session',
@@ -440,14 +481,14 @@ describe('parse-cookie-options', () => {
       parseCookieValue({
         options: {
           key: 'session',
-          maxAge: 60,
+          policy: 'policy-fingerprint',
         },
         value: { ok: true },
       }),
       {
         options: {
           key: 'session',
-          maxAge: 60,
+          policy: 'policy-fingerprint',
         },
         value: { ok: true },
       },
@@ -458,8 +499,99 @@ describe('parse-cookie-options', () => {
     assert.isUndefined(parseCookieValue({ options: null, value: true }))
     assert.isUndefined(parseCookieValue({ options: { key: '' }, value: true }))
     assert.isUndefined(parseCookieValue({ options: { key: 'bad key' }, value: true }))
-    assert.isUndefined(parseCookieValue({ options: { key: 'session', maxAge: '1' }, value: true }))
-    assert.isUndefined(parseCookieValue({ options: { key: 'session', maxAge: -1 }, value: true }))
+    assert.isUndefined(parseCookieValue({ options: { key: 'session', maxAge: 60 }, value: true }))
+    assert.isUndefined(parseCookieValue({ options: { key: 'session', policy: '' }, value: true }))
+    assert.isUndefined(parseCookieValue({ options: { key: 'session', policy: 1 }, value: true }))
+  })
+
+  it('treats omitted and false boolean transport flags as the same policy', async () => {
+    const omitted = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      maxAge: 60,
+      type: 'hmac',
+    })
+
+    const explicitFalse = parseCookieOptions({
+      httpOnly: false,
+      key: 'session',
+      keys: [hmacKey],
+      maxAge: 60,
+      secure: false,
+      type: 'hmac',
+    })
+
+    assert.equal(await policyFingerprint(omitted), await policyFingerprint(explicitFalse))
+  })
+
+  it('changes the policy fingerprint when rewrite-safe transport attributes change', async () => {
+    const base = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      type: 'hmac',
+    })
+
+    const secure = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      secure: true,
+      type: 'hmac',
+    })
+
+    const httpOnly = parseCookieOptions({
+      httpOnly: true,
+      key: 'session',
+      keys: [hmacKey],
+      type: 'hmac',
+    })
+
+    const sameSite = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      sameSite: 'Lax',
+      type: 'hmac',
+    })
+
+    const maxAge = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      maxAge: 60,
+      type: 'hmac',
+    })
+
+    assert.notEqual(await policyFingerprint(base), await policyFingerprint(secure))
+    assert.notEqual(await policyFingerprint(base), await policyFingerprint(httpOnly))
+    assert.notEqual(await policyFingerprint(base), await policyFingerprint(sameSite))
+    assert.notEqual(await policyFingerprint(base), await policyFingerprint(maxAge))
+  })
+
+  it('does not include cookie identity and scope fields in the policy fingerprint', async () => {
+    const base = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      sameSite: 'Lax',
+      type: 'hmac',
+    })
+
+    const renamed = parseCookieOptions({
+      key: 'session',
+      keys: [hmacKey],
+      name: 'other',
+      sameSite: 'Lax',
+      type: 'hmac',
+    })
+
+    const scoped = parseCookieOptions({
+      domain: 'example.com',
+      key: 'session',
+      keys: [hmacKey],
+      path: '/app',
+      sameSite: 'Lax',
+      type: 'hmac',
+    })
+
+    assert.equal(await policyFingerprint(base), await policyFingerprint(renamed))
+    assert.equal(await policyFingerprint(base), await policyFingerprint(scoped))
   })
 
   it('aggregates multiple validation causes in one error', () => {

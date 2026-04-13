@@ -45,6 +45,10 @@ export const from = async (cookieValue: string, keys: Buffer[]) => {
 
     const expectedBuffer = Buffer.from(expectedInput)
 
+    if (expectedBuffer.length !== inputBuffer.length) {
+      continue
+    }
+
     const decoded = timingSafeEqual(expectedBuffer, inputBuffer)
 
     rotate = decoded && index > 0

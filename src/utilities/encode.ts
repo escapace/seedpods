@@ -5,6 +5,7 @@ export const encode = (
   // eslint-disable-next-line typescript/no-explicit-any
   value: any,
   options: SeedpodsParsedCookieOptions,
+  policy: string,
 ): Buffer | undefined => {
   if (value === undefined) {
     return
@@ -13,12 +14,12 @@ export const encode = (
   const payload: SeedpodsCookieValue = {
     options: {
       key: options.key,
+      policy,
       // path: options.path,
       // domain: options.domain,
       // secure: options.secure,
       // httpOnly: options.httpOnly,
       // sameSite: options.sameSite,
-      maxAge: options.maxAge,
     },
     value,
   }

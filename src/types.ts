@@ -36,7 +36,7 @@ export type SeedpodsErrorType = (typeof SEEDPODS_ERROR_TYPES)[number]
 
 export interface SeedpodsCookieValueOptions {
   key: string
-  maxAge?: number
+  policy: string
 }
 
 export interface SeedpodsCookieValue {
@@ -87,6 +87,9 @@ export interface SeedpodsCookieOptionsBase<SeedpodsCookieKey extends string = st
 
   /**
    * SameSite attribute written to `Set-Cookie`.
+   *
+   * @remarks
+   * `sameSite: 'None'` requires `secure: true`.
    */
   sameSite?: SeedpodsCookieSameSite
 

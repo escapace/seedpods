@@ -354,19 +354,13 @@ function parseCookieValueOptions(value: unknown): SeedpodsCookieValue['options']
     return
   }
 
-  if (value.maxAge !== undefined) {
-    if (typeof value.maxAge !== 'number' || Number.isNaN(value.maxAge)) {
-      return
-    }
-
-    if (!Number.isInteger(value.maxAge) || value.maxAge < 0) {
-      return
-    }
+  if (typeof value.policy !== 'string' || value.policy.length === 0) {
+    return
   }
 
   return {
-    ...(value.maxAge === undefined ? {} : { maxAge: value.maxAge }),
     key: value.key,
+    policy: value.policy,
   }
 }
 
@@ -428,6 +422,14 @@ export const parseCookieOptions = <
   const cookiePrefix = validateCookiePrefix(value.prefix, causes)
   const cookieSameSite = validateCookieSameSite(value.sameSite, causes)
   const cookieSecure = validateCookieBoolean('secure', value.secure, causes)
+
+  if (cookieSameSite === 'None' && cookieSecure !== true) {
+    causes.push({
+      option: 'sameSite',
+      reason: 'must not be "None" unless "secure" is true',
+      type: 'CookieOptionValueInvalid',
+    })
+  }
 
   if (cookiePrefix === '__Secure-' && cookieSecure !== true) {
     causes.push({

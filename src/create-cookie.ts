@@ -15,6 +15,7 @@ import { from as fromHmac, to as toHmac } from './cookie-type/hmac'
 import { decode } from './utilities/decode'
 import { encode } from './utilities/encode'
 import { parseCookieOptions } from './utilities/parse-cookie-options'
+import { policyFingerprint } from './utilities/policy-fingerprint'
 
 const attributes = (cookie: SeedpodsParsedCookieOptions, expire = false) => {
   const array: string[] = []
@@ -31,7 +32,9 @@ const attributes = (cookie: SeedpodsParsedCookieOptions, expire = false) => {
     array.push('HttpOnly')
   }
 
-  if (cookie.maxAge !== undefined) {
+  if (expire) {
+    array.push('Max-Age=0')
+  } else if (cookie.maxAge !== undefined) {
     array.push(`Max-Age=${cookie.maxAge}`)
   }
 
@@ -70,6 +73,7 @@ export const createCookie = <T extends string, U extends SeedpodsCookieType, V>(
 
   const to = options.type === 'hmac' ? toHmac : toAesGcm
   const from = options.type === 'hmac' ? fromHmac : fromAesGcm
+  const currentPolicy = policyFingerprint(parsedCookie)
 
   return {
     [SEEDPODS_SYMBOL_COOKIE]: {
@@ -99,10 +103,13 @@ export const createCookie = <T extends string, U extends SeedpodsCookieType, V>(
           return indecipherable
         }
 
+        const needsPolicyUpdate = value.options.policy !== (await currentPolicy)
+
         return {
-          type: result.rotate
-            ? SeedpodsCookieStateType.SetButNeedsUpdate
-            : SeedpodsCookieStateType.Set,
+          type:
+            result.rotate || needsPolicyUpdate
+              ? SeedpodsCookieStateType.SetButNeedsUpdate
+              : SeedpodsCookieStateType.Set,
           value: value.value,
         }
       },
@@ -118,7 +125,7 @@ export const createCookie = <T extends string, U extends SeedpodsCookieType, V>(
           state.type === SeedpodsCookieStateType.Set ||
           state.type === SeedpodsCookieStateType.SetButNeedsUpdate
         ) {
-          const value = encode(state.value, parsedCookie)
+          const value = encode(state.value, parsedCookie, await currentPolicy)
 
           if (value === undefined) {
             return

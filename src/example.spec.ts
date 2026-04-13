@@ -241,6 +241,7 @@ describe('README usage example', () => {
 
     expect(expiredSessionValue).toBeDefined()
     expect(expiredSessionValue).toContain('Expires=Thu, 01 Jan 1970 00:00:00 GMT')
+    expect(expiredSessionValue).toContain('Max-Age=0')
     expect(expiredSessionValue).toContain('HttpOnly')
     expect(expiredSessionValue).toContain('Path=/')
     expect(expiredSessionValue).toContain('SameSite=Lax')

@@ -8,6 +8,7 @@ import { useCookies } from './use-cookies'
 import { type SeedpodsCookieState, SeedpodsCookieStateType } from './types'
 import { deriveKey } from './utilities/derive-key'
 import { encode } from './utilities/encode'
+import { policyFingerprint } from './utilities/policy-fingerprint'
 
 const keyA = await deriveKey('key-a', { iterations: 1 })
 const keyB = await deriveKey('key-b', { iterations: 1 })
@@ -74,6 +75,9 @@ const ball = createCookie({
 
 const childSeedpodsJar = createJar().put(dazzle).put(ball)
 const seedpodsJar = createJar().put(vixen).put(tycho).combine(childSeedpodsJar)
+const malformedHmacCookieValues = ['a.b', 'abc.def', 'AQ.b', 'Zm8.YQ', 'hello.world', 'AA.BB']
+const encodeWithPolicy = async (value: unknown, options: Parameters<typeof encode>[1]) =>
+  encode(value, options, await policyFingerprint(options))
 
 describe('createCookie', () => {
   it('treats undecodable payloads as indecipherable', async () => {
@@ -82,6 +86,14 @@ describe('createCookie', () => {
     const state = await dazzle[SEEDPODS_SYMBOL_COOKIE].fromString(cookieValue)
 
     assert.deepEqual(state, { type: SeedpodsCookieStateType.Indecipherable })
+  })
+
+  it('treats malformed hmac inputs as indecipherable without throwing', async () => {
+    for (const value of malformedHmacCookieValues) {
+      const state = await dazzle[SEEDPODS_SYMBOL_COOKIE].fromString(value)
+
+      assert.deepEqual(state, { type: SeedpodsCookieStateType.Indecipherable })
+    }
   })
 
   it('returns undefined when asked to serialize an undefined set value', async () => {
@@ -111,6 +123,17 @@ describe('createCookie', () => {
 
     assert.match(cookieValue!, /^plain=/)
     assert.notInclude(cookieValue!, '; ')
+  })
+
+  it('serializes expired cookies with Max-Age=0', async () => {
+    const state: SeedpodsCookieState = {
+      type: SeedpodsCookieStateType.Expired,
+    }
+
+    assert.equal(
+      await vixen[SEEDPODS_SYMBOL_COOKIE].toString(state),
+      '__Secure-vixen=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure',
+    )
   })
 })
 
@@ -159,12 +182,79 @@ describe('useCookies', () => {
     assert.hasAllKeys(await useCookies('', seedpodsJar), ['del', 'get', 'set', 'values', 'entries'])
   })
 
+  it('does not throw on malformed hmac cookie values and expires them', async () => {
+    for (const value of malformedHmacCookieValues) {
+      const cookies = await useCookies(`dazzle=${value}`, childSeedpodsJar)
+
+      assert.equal(cookies.get('dazzle'), undefined)
+      assert.deepEqual(await cookies.values(), [
+        'dazzle=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Max-Age=0; SameSite=Lax',
+      ])
+    }
+  })
+
+  it('prefers valid hmac cookies when duplicates include malformed values', async () => {
+    const validValue = await toHmac(
+      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
+      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+    )
+
+    for (const cookieHeader of [
+      `dazzle=abc.def; dazzle=${validValue!}`,
+      `dazzle=${validValue!}; dazzle=abc.def`,
+    ]) {
+      const cookies = await useCookies(cookieHeader, childSeedpodsJar)
+
+      assert.equal(cookies.get('dazzle'), 100)
+      assert.deepEqual(await cookies.values(), [])
+    }
+  })
+
+  it('rewrites cookies when the embedded transport policy changes', async () => {
+    const previous = createCookie<'dazzle', 'hmac', number>({
+      httpOnly: true,
+      key: 'dazzle',
+      keys: [keyC, keyB],
+      sameSite: 'Lax',
+      type: 'hmac',
+    })
+
+    const current = createCookie<'dazzle', 'hmac', number>({
+      httpOnly: true,
+      key: 'dazzle',
+      keys: [keyC, keyB],
+      sameSite: 'Strict',
+      type: 'hmac',
+    })
+
+    const header = `dazzle=${(await toHmac(
+      (await encodeWithPolicy(100, previous[SEEDPODS_SYMBOL_COOKIE].options))!,
+      previous[SEEDPODS_SYMBOL_COOKIE].options.keys,
+    ))!}`
+
+    const cookies = await useCookies(header, createJar().put(current))
+
+    assert.equal(cookies.get('dazzle'), 100)
+
+    const values = await cookies.values()
+
+    assert.lengthOf(values, 1)
+    assert.include(values[0], 'SameSite=Strict')
+    assert.notInclude(values[0], 'SameSite=Lax')
+  })
+
   it('reads, merges, writes, and deletes cookie values', async () => {
     const cookieHeader = `__Secure-vixen=${(await toAesGcm(
-      encode({ author: 'escape', change: 'triangle' }, vixen[SEEDPODS_SYMBOL_COOKIE].options)!,
+      (await encodeWithPolicy(
+        { author: 'escape', change: 'triangle' },
+        vixen[SEEDPODS_SYMBOL_COOKIE].options,
+      ))!,
       [keyC],
     ))!}; tycho=${(await toAesGcm(
-      encode(['threw', 'satellites', 'class'], tycho[SEEDPODS_SYMBOL_COOKIE].options)!,
+      (await encodeWithPolicy(
+        ['threw', 'satellites', 'class'],
+        tycho[SEEDPODS_SYMBOL_COOKIE].options,
+      ))!,
       [keyB, keyA],
     ))!}; __Host-ball=${Buffer.from('ride problem cause market').toString('base64url')}; abc=qwe`
 
@@ -180,7 +270,9 @@ describe('useCookies', () => {
 
     assert.ok(
       (await t.values()).some(
-        (value) => value === '__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure',
+        (value) =>
+          value ===
+          '__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/; Secure',
       ),
     )
 
@@ -201,7 +293,9 @@ describe('useCookies', () => {
 
     assert.ok(
       (await t.values()).some((value) =>
-        value.startsWith('__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure'),
+        value.startsWith(
+          '__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/; Secure',
+        ),
       ),
     )
 
@@ -222,18 +316,24 @@ describe('useCookies', () => {
     t.del('ball')
 
     assert.equal((await t.values()).length, 3)
-    assert.ok((await t.values()).some((value) => value.startsWith('__Secure-vixen=; Expires=')))
+    assert.ok(
+      (await t.values()).some((value) =>
+        value.startsWith('__Secure-vixen=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0'),
+      ),
+    )
 
     assert.ok(
       (await t.values()).some((value) =>
         value.startsWith(
-          'tycho=; Domain=example.com; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/tycho',
+          'tycho=; Domain=example.com; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/tycho',
         ),
       ),
     )
     assert.ok(
       (await t.values()).some((value) =>
-        value.startsWith('__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure'),
+        value.startsWith(
+          '__Host-ball=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/; Secure',
+        ),
       ),
     )
 
@@ -267,7 +367,10 @@ describe('useCookies', () => {
 
   it('keeps state intact when a reducer throws', async () => {
     const tychoHeader = `tycho=${(await toAesGcm(
-      encode(['threw', 'satellites', 'class'], tycho[SEEDPODS_SYMBOL_COOKIE].options)!,
+      (await encodeWithPolicy(
+        ['threw', 'satellites', 'class'],
+        tycho[SEEDPODS_SYMBOL_COOKIE].options,
+      ))!,
       [keyB, keyA],
     ))!}`
     let reducerShouldThrow = true
@@ -303,16 +406,19 @@ describe('useCookies', () => {
 
     const cookieHeader = [
       `__Secure-vixen=${(await toAesGcm(
-        encode({ key: 'vixen' }, vixen[SEEDPODS_SYMBOL_COOKIE].options)!,
+        (await encodeWithPolicy({ key: 'vixen' }, vixen[SEEDPODS_SYMBOL_COOKIE].options))!,
         [keyC],
       ))!}`,
       'qweqweqwe=123',
       `__Secure-vixen=${(await toAesGcm(
-        encode({ key: 'vixenTwo' }, vixenTwo[SEEDPODS_SYMBOL_COOKIE].options)!,
+        (await encodeWithPolicy({ key: 'vixenTwo' }, vixenTwo[SEEDPODS_SYMBOL_COOKIE].options))!,
         [keyB],
       ))!}`,
       `__Secure-vixen=${(await toAesGcm(
-        encode({ key: 'vixenThree' }, vixenThree[SEEDPODS_SYMBOL_COOKIE].options)!,
+        (await encodeWithPolicy(
+          { key: 'vixenThree' },
+          vixenThree[SEEDPODS_SYMBOL_COOKIE].options,
+        ))!,
         [keyC],
       ))!}`,
     ].join('; ')

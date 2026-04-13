@@ -1,4 +1,3 @@
- 
 import { assert, describe, it } from 'vitest'
 import { to, from } from './hmac'
 
@@ -56,5 +55,13 @@ describe('hmac', () => {
     assert.equal(await from('', [Buffer.from('desk-species-eventually-vowel')]), undefined)
 
     assert.equal(await from('.asd', [Buffer.from('desk-species-eventually-vowel')]), undefined)
+  })
+
+  it('rejects split-valid malformed values without throwing', async () => {
+    const malformedValues = ['a.b', 'abc.def', 'AQ.b', 'Zm8.YQ', 'hello.world', 'AA.BB']
+
+    for (const value of malformedValues) {
+      assert.equal(await from(value, [Buffer.from('desk-species-eventually-vowel')]), undefined)
+    }
   })
 })
