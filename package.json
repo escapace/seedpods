@@ -12,7 +12,8 @@
   "bugs": "https://github.com/escapace/seedpods/issues",
   "dependencies": {
     "@escapace/canonicalize": "^1.1.0",
-    "fast-equals": "^6.0.0"
+    "fast-equals": "^6.0.0",
+    "secure-json-parse": "^4.1.0"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
@@ -30,7 +31,6 @@
     "lefthook": "2.1.4",
     "prettier": "3.8.1",
     "prettier-config-escapace": "1.2.2",
-    "secure-json-parse": "4.1.0",
     "syncpack": "14.3.0",
     "tsx": "4.21.0",
     "typescript": "5.9.3",

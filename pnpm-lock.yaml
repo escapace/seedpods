@@ -14,6 +14,9 @@ importers:
       fast-equals:
         specifier: ^6.0.0
         version: 6.0.0
+      secure-json-parse:
+        specifier: ^4.1.0
+        version: 4.1.0
     devDependencies:
       '@commitlint/cli':
         specifier: 20.5.0
@@ -60,9 +63,6 @@ importers:
       prettier-config-escapace:
         specifier: 1.2.2
         version: 1.2.2
-      secure-json-parse:
-        specifier: 4.1.0
-        version: 4.1.0
       syncpack:
         specifier: 14.3.0
         version: 14.3.0
