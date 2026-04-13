@@ -6,6 +6,8 @@ import { policyFingerprint } from './policy-fingerprint'
 
 const aesKey = Buffer.alloc(32, 1)
 const hmacKey = Buffer.from('hmac-key')
+const aesConfiguredKey = { id: 'aes-key', value: aesKey } as const
+const hmacConfiguredKey = { id: 'hmac-key', value: hmacKey } as const
 
 function expectSeedpodsError(value: unknown): SeedpodsError {
   try {
@@ -38,12 +40,12 @@ describe('parse-cookie-options', () => {
     assert.deepEqual(
       parseCookieOptions({
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         type: 'hmac',
       }),
       {
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         name: 'session',
         type: 'hmac',
       },
@@ -56,7 +58,7 @@ describe('parse-cookie-options', () => {
         domain: 'example.com',
         httpOnly: true,
         key: 'session',
-        keys: [aesKey],
+        keys: [aesConfiguredKey],
         maxAge: 3600,
         name: 'custom',
         path: '/app',
@@ -69,7 +71,7 @@ describe('parse-cookie-options', () => {
         domain: 'example.com',
         httpOnly: true,
         key: 'session',
-        keys: [aesKey],
+        keys: [aesConfiguredKey],
         maxAge: 3600,
         name: '__Secure-custom',
         path: '/app',
@@ -85,7 +87,7 @@ describe('parse-cookie-options', () => {
     assert.equal(
       parseCookieOptions({
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         path: '/',
         prefix: '__Host-',
         secure: true,
@@ -99,22 +101,22 @@ describe('parse-cookie-options', () => {
     assert.deepEqual(
       parseCookieOptions({
         key: 'hmac',
-        keys: [Buffer.alloc(1)],
+        keys: [{ id: 'short-hmac', value: Buffer.alloc(1) }],
         type: 'hmac',
       }).keys,
-      [Buffer.alloc(1)],
+      [{ id: 'short-hmac', value: Buffer.alloc(1) }],
     )
 
     const error = expectSeedpodsError({
       key: 'aes',
-      keys: [Buffer.alloc(31)],
+      keys: [{ id: 'short-aes', value: Buffer.alloc(31) }],
       type: 'aes-gcm',
     })
 
     assertHasCause(
       error,
       'CookieOptionValueInvalid',
-      (cause) => cause.option === 'keys[0]' && cause.reason.includes('32 bytes'),
+      (cause) => cause.option === 'keys[0].value' && cause.reason.includes('32 bytes'),
     )
   })
 
@@ -122,7 +124,7 @@ describe('parse-cookie-options', () => {
     const error = expectSeedpodsError({
       extra: true,
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -150,7 +152,7 @@ describe('parse-cookie-options', () => {
     assert.equal(
       parseCookieOptions({
         key: token,
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         name: token,
         type: 'hmac',
       }).name,
@@ -159,7 +161,7 @@ describe('parse-cookie-options', () => {
 
     const invalidKeyError = expectSeedpodsError({
       key: 'bad/key',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -171,7 +173,7 @@ describe('parse-cookie-options', () => {
 
     const invalidNameError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       name: 'bad/name',
       type: 'hmac',
     })
@@ -188,7 +190,7 @@ describe('parse-cookie-options', () => {
       parseCookieOptions({
         domain: '.Example.COM',
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         path: '/app',
         type: 'hmac',
       }).domain,
@@ -198,7 +200,7 @@ describe('parse-cookie-options', () => {
     const invalidDomainError = expectSeedpodsError({
       domain: '-example.com',
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -211,7 +213,7 @@ describe('parse-cookie-options', () => {
     const ipDomainError = expectSeedpodsError({
       domain: '127.0.0.1',
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -223,7 +225,7 @@ describe('parse-cookie-options', () => {
 
     const invalidPathError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       path: '/app;admin',
       type: 'hmac',
     })
@@ -236,7 +238,7 @@ describe('parse-cookie-options', () => {
 
     const relativePathError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       path: 'app',
       type: 'hmac',
     })
@@ -252,7 +254,7 @@ describe('parse-cookie-options', () => {
     const error = expectSeedpodsError({
       httpOnly: 'true',
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       maxAge: 1.5,
       partitioned: 'true',
       sameSite: 'Later',
@@ -278,7 +280,14 @@ describe('parse-cookie-options', () => {
 
     const tooManyError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey, hmacKey, hmacKey, hmacKey, hmacKey, hmacKey],
+      keys: [
+        { id: 'a', value: hmacKey },
+        { id: 'b', value: hmacKey },
+        { id: 'c', value: hmacKey },
+        { id: 'd', value: hmacKey },
+        { id: 'e', value: hmacKey },
+        { id: 'f', value: hmacKey },
+      ],
       type: 'hmac',
     })
 
@@ -286,21 +295,84 @@ describe('parse-cookie-options', () => {
 
     const invalidEntryError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey, 'not-a-buffer'],
+      keys: [hmacConfiguredKey, 'not-a-buffer'],
       type: 'hmac',
     })
 
     assertHasCause(
       invalidEntryError,
       'CookieOptionTypeInvalid',
-      (cause) => cause.option === 'keys[1]' && cause.expected === 'a Buffer',
+      (cause) => cause.option === 'keys[1]' && cause.expected === 'an object with "id" and "value"',
+    )
+
+    const missingIdError = expectSeedpodsError({
+      key: 'session',
+      keys: [{ value: hmacKey }],
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      missingIdError,
+      'CookieOptionTypeInvalid',
+      (cause) => cause.option === 'keys[0].id' && cause.expected === 'a string',
+    )
+
+    const nonStringIdError = expectSeedpodsError({
+      key: 'session',
+      keys: [{ id: 1, value: hmacKey }],
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      nonStringIdError,
+      'CookieOptionTypeInvalid',
+      (cause) => cause.option === 'keys[0].id' && cause.expected === 'a string',
+    )
+
+    const emptyIdError = expectSeedpodsError({
+      key: 'session',
+      keys: [{ id: '', value: hmacKey }],
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      emptyIdError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'keys[0].id' && cause.reason.includes('empty'),
+    )
+
+    const duplicateIdError = expectSeedpodsError({
+      key: 'session',
+      keys: [
+        { id: 'dup', value: hmacKey },
+        { id: 'dup', value: Buffer.from('second-key') },
+      ],
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      duplicateIdError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'keys[1].id' && cause.reason.includes('unique'),
+    )
+
+    const invalidMaterialError = expectSeedpodsError({
+      key: 'session',
+      keys: [{ id: 'ok', value: 'not-a-buffer' }],
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      invalidMaterialError,
+      'CookieOptionTypeInvalid',
+      (cause) => cause.option === 'keys[0].value' && cause.expected === 'a Buffer',
     )
   })
 
   it('requires secure when sameSite is None', () => {
     const missingSecureError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       sameSite: 'None',
       type: 'hmac',
     })
@@ -313,7 +385,7 @@ describe('parse-cookie-options', () => {
 
     const falseSecureError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       sameSite: 'None',
       secure: false,
       type: 'hmac',
@@ -328,7 +400,7 @@ describe('parse-cookie-options', () => {
     assert.equal(
       parseCookieOptions({
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         sameSite: 'None',
         secure: true,
         type: 'hmac',
@@ -340,7 +412,7 @@ describe('parse-cookie-options', () => {
   it('requires secure when partitioned is true', () => {
     const missingSecureError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       partitioned: true,
       type: 'hmac',
     })
@@ -353,7 +425,7 @@ describe('parse-cookie-options', () => {
 
     const falseSecureError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       partitioned: true,
       secure: false,
       type: 'hmac',
@@ -368,7 +440,7 @@ describe('parse-cookie-options', () => {
     assert.equal(
       parseCookieOptions({
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         partitioned: true,
         secure: true,
         type: 'hmac',
@@ -380,7 +452,7 @@ describe('parse-cookie-options', () => {
   it('enforces secure-prefix invariants', () => {
     const secureError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       prefix: '__Secure-',
       type: 'hmac',
     })
@@ -396,7 +468,7 @@ describe('parse-cookie-options', () => {
     const error = expectSeedpodsError({
       domain: 'example.com',
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       path: '/app',
       prefix: '__Host-',
       type: 'hmac',
@@ -422,7 +494,7 @@ describe('parse-cookie-options', () => {
   it('enforces reserved-prefix invariants from the final cookie name case-insensitively', () => {
     const secureError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       name: '__SeCuRe-session',
       type: 'hmac',
     })
@@ -435,7 +507,7 @@ describe('parse-cookie-options', () => {
 
     const hostNameError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       name: '__hOsT-session',
       secure: true,
       type: 'hmac',
@@ -449,7 +521,7 @@ describe('parse-cookie-options', () => {
 
     const hostKeyError = expectSeedpodsError({
       key: '__HoSt-session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       secure: true,
       type: 'hmac',
     })
@@ -465,7 +537,7 @@ describe('parse-cookie-options', () => {
     assert.equal(
       parseCookieOptions({
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         name: '__SeCuRe-session',
         secure: true,
         type: 'hmac',
@@ -476,7 +548,7 @@ describe('parse-cookie-options', () => {
     assert.equal(
       parseCookieOptions({
         key: 'session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         name: '__hOsT-session',
         path: '/',
         secure: true,
@@ -488,7 +560,7 @@ describe('parse-cookie-options', () => {
     assert.equal(
       parseCookieOptions({
         key: '__HoSt-session',
-        keys: [hmacKey],
+        keys: [hmacConfiguredKey],
         path: '/',
         secure: true,
         type: 'hmac',
@@ -500,7 +572,7 @@ describe('parse-cookie-options', () => {
   it('rejects missing and incorrectly typed scalar option values', () => {
     const keyTypeError = expectSeedpodsError({
       key: 1,
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -512,7 +584,7 @@ describe('parse-cookie-options', () => {
 
     const emptyKeyError = expectSeedpodsError({
       key: '',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -525,7 +597,7 @@ describe('parse-cookie-options', () => {
     const domainTypeError = expectSeedpodsError({
       domain: 1,
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -538,7 +610,7 @@ describe('parse-cookie-options', () => {
     const domainEmptyError = expectSeedpodsError({
       domain: '',
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
@@ -550,7 +622,7 @@ describe('parse-cookie-options', () => {
 
     const pathTypeError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       path: 1,
       type: 'hmac',
     })
@@ -563,7 +635,7 @@ describe('parse-cookie-options', () => {
 
     const pathEmptyError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       path: '',
       type: 'hmac',
     })
@@ -576,7 +648,7 @@ describe('parse-cookie-options', () => {
 
     const maxAgeTypeError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       maxAge: Number.NaN,
       type: 'hmac',
     })
@@ -589,7 +661,7 @@ describe('parse-cookie-options', () => {
 
     const maxAgeNegativeError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       maxAge: -1,
       type: 'hmac',
     })
@@ -604,7 +676,7 @@ describe('parse-cookie-options', () => {
   it('rejects non-string literal options and non-array key collections', () => {
     const prefixTypeError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       prefix: true,
       type: 'hmac',
     })
@@ -613,7 +685,7 @@ describe('parse-cookie-options', () => {
 
     const sameSiteTypeError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       sameSite: true,
       type: 'hmac',
     })
@@ -626,7 +698,7 @@ describe('parse-cookie-options', () => {
 
     const typeTypeError = expectSeedpodsError({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: true,
     })
 
@@ -641,7 +713,7 @@ describe('parse-cookie-options', () => {
     assertHasCause(
       keysTypeError,
       'CookieOptionTypeInvalid',
-      (cause) => cause.option === 'keys' && cause.expected === 'an array of Buffer values',
+      (cause) => cause.option === 'keys' && cause.expected === 'an array of { id, value } objects',
     )
   })
 
@@ -677,7 +749,7 @@ describe('parse-cookie-options', () => {
   it('treats omitted and false boolean transport flags as the same policy', async () => {
     const omitted = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       maxAge: 60,
       type: 'hmac',
     })
@@ -685,7 +757,7 @@ describe('parse-cookie-options', () => {
     const explicitFalse = parseCookieOptions({
       httpOnly: false,
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       maxAge: 60,
       partitioned: false,
       secure: false,
@@ -698,13 +770,13 @@ describe('parse-cookie-options', () => {
   it('changes the policy fingerprint when rewrite-safe transport attributes change', async () => {
     const base = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
     const secure = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       secure: true,
       type: 'hmac',
     })
@@ -712,27 +784,27 @@ describe('parse-cookie-options', () => {
     const httpOnly = parseCookieOptions({
       httpOnly: true,
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       type: 'hmac',
     })
 
     const sameSite = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       sameSite: 'Lax',
       type: 'hmac',
     })
 
     const maxAge = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       maxAge: 60,
       type: 'hmac',
     })
 
     const partitioned = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       partitioned: true,
       secure: true,
       type: 'hmac',
@@ -748,14 +820,14 @@ describe('parse-cookie-options', () => {
   it('does not include cookie identity and scope fields in the policy fingerprint', async () => {
     const base = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       sameSite: 'Lax',
       type: 'hmac',
     })
 
     const renamed = parseCookieOptions({
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       name: 'other',
       sameSite: 'Lax',
       type: 'hmac',
@@ -764,7 +836,7 @@ describe('parse-cookie-options', () => {
     const scoped = parseCookieOptions({
       domain: 'example.com',
       key: 'session',
-      keys: [hmacKey],
+      keys: [hmacConfiguredKey],
       path: '/app',
       sameSite: 'Lax',
       type: 'hmac',

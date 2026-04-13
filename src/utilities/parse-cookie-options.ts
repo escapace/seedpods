@@ -7,6 +7,7 @@ import {
 } from '../constants'
 import { SeedpodsError } from '../error'
 import type {
+  SeedpodsConfiguredKey,
   SeedpodsCookieOptionsForType,
   SeedpodsCookiePrefix,
   SeedpodsCookieSameSite,
@@ -297,7 +298,7 @@ function validateCookieKeys(
   value: unknown,
   cookieType: SeedpodsCookieType | undefined,
   causes: SeedpodsErrorCause[],
-): Buffer[] | undefined {
+): SeedpodsConfiguredKey[] | undefined {
   if (value === undefined) {
     causes.push({
       option: 'keys',
@@ -309,7 +310,7 @@ function validateCookieKeys(
   if (!Array.isArray(value)) {
     causes.push({
       actual: value,
-      expected: 'an array of Buffer values',
+      expected: 'an array of { id, value } objects',
       option: 'keys',
       type: 'CookieOptionTypeInvalid',
     })
@@ -332,29 +333,77 @@ function validateCookieKeys(
     })
   }
 
+  const result: SeedpodsConfiguredKey[] = []
+  const ids = new Set<string>()
+
   for (const [index, entry] of value.entries()) {
     const option = `keys[${index}]`
 
-    if (!Buffer.isBuffer(entry)) {
+    if (!isRecord(entry)) {
       causes.push({
         actual: entry,
-        expected: 'a Buffer',
+        expected: 'an object with "id" and "value"',
         option,
         type: 'CookieOptionTypeInvalid',
       })
       continue
     }
 
-    if (cookieType === 'aes-gcm' && entry.byteLength !== 32) {
+    const idOption = `${option}.id`
+    const valueOption = `${option}.value`
+
+    if (typeof entry.id !== 'string') {
       causes.push({
-        option,
+        actual: entry.id,
+        expected: 'a string',
+        option: idOption,
+        type: 'CookieOptionTypeInvalid',
+      })
+      continue
+    }
+
+    if (entry.id.length === 0) {
+      causes.push({
+        option: idOption,
+        reason: 'must not be empty',
+        type: 'CookieOptionValueInvalid',
+      })
+      continue
+    }
+
+    if (ids.has(entry.id)) {
+      causes.push({
+        option: idOption,
+        reason: 'must be unique within one cookie definition',
+        type: 'CookieOptionValueInvalid',
+      })
+      continue
+    }
+
+    if (!Buffer.isBuffer(entry.value)) {
+      causes.push({
+        actual: entry.value,
+        expected: 'a Buffer',
+        option: valueOption,
+        type: 'CookieOptionTypeInvalid',
+      })
+      continue
+    }
+
+    if (cookieType === 'aes-gcm' && entry.value.byteLength !== 32) {
+      causes.push({
+        option: valueOption,
         reason: 'must be exactly 32 bytes (256 bits)',
         type: 'CookieOptionValueInvalid',
       })
+      continue
     }
+
+    ids.add(entry.id)
+    result.push({ id: entry.id, value: entry.value })
   }
 
-  return value.filter((entry): entry is Buffer => Buffer.isBuffer(entry))
+  return result
 }
 
 function parseCookieValueOptions(value: unknown): SeedpodsCookieValue['options'] | undefined {

@@ -1,67 +1,75 @@
+import type { SeedpodsConfiguredKey } from '../types'
+import { decodeKid } from '../utilities/decode-kid'
+import { encodeKid } from '../utilities/encode-kid'
 import { timingSafeEqual } from '../utilities/timing-safe-equal'
+
+const sign = async (input: Buffer, keyMaterial: Buffer): Promise<Buffer> => {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyMaterial,
+    { hash: 'SHA-256', name: 'HMAC' },
+    false,
+    ['sign', 'verify'],
+  )
+
+  return Buffer.from(await crypto.subtle.sign('HMAC', key, input))
+}
 
 export const to = async function (
   buffer: Buffer,
-  keys: Buffer[],
-  keyIndex = 0,
+  keys: SeedpodsConfiguredKey[],
 ): Promise<string | undefined> {
   if (buffer.length === 0) {
     return undefined
   }
 
-  const key = await crypto.subtle.importKey(
-    'raw',
-    keys[keyIndex],
-    { hash: 'SHA-256', name: 'HMAC' },
-    false,
-    ['sign', 'verify'],
-  )
-  const signature = Buffer.from(await crypto.subtle.sign('HMAC', key, buffer))
+  const [key] = keys
+  const kid = encodeKid(key.id)
+  const payload = buffer.toString('base64url')
+  const input = `${kid}.${payload}`
+  const signature = await sign(Buffer.from(input), key.value)
 
-  return buffer.toString('base64url') + '.' + signature.toString('base64url')
+  return `${input}.${signature.toString('base64url')}`
 }
 
-export const from = async (cookieValue: string, keys: Buffer[]) => {
+export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) => {
   const split = cookieValue.split('.')
-  const valueB64 = split[0]
 
-  if (split.length !== 2) {
+  if (split.length !== 3) {
     return
   }
 
-  const value = Buffer.from(valueB64, 'base64url')
+  const [kidSegment, payloadSegment] = split
+  const id = decodeKid(kidSegment)
 
-  let rotate = false
-  let success = false
+  if (id === undefined) {
+    return
+  }
 
+  const index = keys.findIndex((key) => key.id === id)
+
+  if (index === -1) {
+    return
+  }
+
+  const selected = keys[index]
+  const value = Buffer.from(payloadSegment, 'base64url')
+  const expectedInput = await to(value, [selected])
+
+  if (expectedInput === undefined) {
+    return
+  }
+
+  const expectedBuffer = Buffer.from(expectedInput)
   const inputBuffer = Buffer.from(cookieValue)
 
-  for (let index = 0; index < keys.length; index++) {
-    const expectedInput = await to(value, keys, index)
-
-    if (expectedInput === undefined) {
-      continue
-    }
-
-    const expectedBuffer = Buffer.from(expectedInput)
-
-    if (expectedBuffer.length !== inputBuffer.length) {
-      continue
-    }
-
-    const decoded = timingSafeEqual(expectedBuffer, inputBuffer)
-
-    rotate = decoded && index > 0
-
-    if (decoded) {
-      success = true
-      break
-    }
-  }
-
-  if (!success) {
+  if (expectedBuffer.length !== inputBuffer.length) {
     return
   }
 
-  return { rotate, value }
+  if (!timingSafeEqual(expectedBuffer, inputBuffer)) {
+    return
+  }
+
+  return { rotate: index > 0, value }
 }

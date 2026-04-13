@@ -6,22 +6,24 @@ import type { SeedpodsCookie, SeedpodsCookies } from './types'
 
 const aesKey = Buffer.alloc(32, 1)
 const hmacKey = Buffer.from('hmac-key')
+const aesConfiguredKey = { id: 'aes-key', value: aesKey } as const
+const hmacConfiguredKey = { id: 'hmac-key', value: hmacKey } as const
 
 const session: SeedpodsCookie<'session', 'hmac', number> = createCookie({
   key: 'session',
-  keys: [hmacKey],
+  keys: [hmacConfiguredKey],
   type: 'hmac',
 })
 
 const profile: SeedpodsCookie<'profile', 'aes-gcm', { name: string }> = createCookie({
   key: 'profile',
-  keys: [aesKey],
+  keys: [aesConfiguredKey],
   type: 'aes-gcm',
 })
 
 const flags: SeedpodsCookie<'flags', 'hmac', string[]> = createCookie({
   key: 'flags',
-  keys: [hmacKey],
+  keys: [hmacConfiguredKey],
   type: 'hmac',
 })
 

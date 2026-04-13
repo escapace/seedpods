@@ -45,6 +45,24 @@ export interface SeedpodsCookieValue {
 }
 
 /**
+ * Configured cryptographic key used to sign or encrypt cookies.
+ *
+ * @remarks
+ * The first configured key writes new cookies. Later keys remain readable during rotation. The identifier is written into the cookie as non-secret metadata so the matching configured key can be selected directly.
+ */
+export interface SeedpodsConfiguredKey {
+  /**
+   * Stable identifier for this configured key.
+   */
+  id: string
+
+  /**
+   * Raw key bytes.
+   */
+  value: Buffer
+}
+
+/**
  * Common cookie options shared by all cookie definitions.
  *
  * @typeParam SeedpodsCookieKey - Application key used to address the cookie through the cookie interface.
@@ -111,7 +129,7 @@ export interface SeedpodsCookieOptionsBase<SeedpodsCookieKey extends string = st
  * Options for an encrypted cookie definition.
  *
  * @remarks
- * The first key is used to write new cookies. Later keys are accepted for reading so key rotation can happen without breaking existing cookies.
+ * The first configured key writes new cookies. Later keys remain readable during rotation.
  *
  * @typeParam SeedpodsCookieKey - Application key used to address the cookie through the cookie interface.
  */
@@ -119,9 +137,9 @@ export interface SeedpodsEncryptedCookieOptions<
   SeedpodsCookieKey extends string = string,
 > extends SeedpodsCookieOptionsBase<SeedpodsCookieKey> {
   /**
-   * Encryption keys in write-first, read-fallback order.
+   * Configured encryption keys in primary-first order.
    */
-  keys: Buffer[]
+  keys: SeedpodsConfiguredKey[]
 
   /**
    * Encryption mode.
@@ -141,9 +159,9 @@ export interface SeedpodsSignedCookieOptions<
   SeedpodsCookieKey extends string = string,
 > extends SeedpodsCookieOptionsBase<SeedpodsCookieKey> {
   /**
-   * Signing keys in write-first, read-fallback order.
+   * Configured signing keys in primary-first order.
    */
-  keys: Buffer[]
+  keys: SeedpodsConfiguredKey[]
 
   /**
    * Signing mode.
@@ -169,14 +187,14 @@ export interface SeedpodsParsedCookieOptionsBase<
 export interface SeedpodsParsedEncryptedCookieOptions<
   SeedpodsCookieKey extends string = string,
 > extends SeedpodsParsedCookieOptionsBase<SeedpodsCookieKey> {
-  keys: Buffer[]
+  keys: SeedpodsConfiguredKey[]
   type: 'aes-gcm'
 }
 
 export interface SeedpodsParsedSignedCookieOptions<
   SeedpodsCookieKey extends string = string,
 > extends SeedpodsParsedCookieOptionsBase<SeedpodsCookieKey> {
-  keys: Buffer[]
+  keys: SeedpodsConfiguredKey[]
   type: 'hmac'
 }
 

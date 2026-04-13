@@ -19,11 +19,17 @@ const recentViewsKey = await deriveKey('recent-views-secret', {
   iterations: 1,
   salt: 'recent-views',
 })
+const currentSessionConfiguredKey = { id: 'current-session', value: currentSessionKey } as const
+const previousSessionConfiguredKey = {
+  id: 'previous-session',
+  value: previousSessionKey,
+} as const
+const recentViewsConfiguredKey = { id: 'recent-views', value: recentViewsKey } as const
 
 const sessionCookie = createCookie<'session', 'aes-gcm', { userId: string }>({
   httpOnly: true,
   key: 'session',
-  keys: [currentSessionKey, previousSessionKey],
+  keys: [currentSessionConfiguredKey, previousSessionConfiguredKey],
   maxAge: 60 * 60 * 24 * 7,
   path: '/',
   prefix: '__Host-',
@@ -35,7 +41,7 @@ const sessionCookie = createCookie<'session', 'aes-gcm', { userId: string }>({
 const legacySessionCookie = createCookie<'session', 'aes-gcm', { userId: string }>({
   httpOnly: true,
   key: 'session',
-  keys: [previousSessionKey],
+  keys: [previousSessionConfiguredKey],
   maxAge: 60 * 60 * 24 * 7,
   path: '/',
   prefix: '__Host-',
@@ -46,7 +52,7 @@ const legacySessionCookie = createCookie<'session', 'aes-gcm', { userId: string 
 
 const recentViewsCookie = createCookie<'recentViews', 'hmac', string[]>({
   key: 'recentViews',
-  keys: [recentViewsKey],
+  keys: [recentViewsConfiguredKey],
   maxAge: 60 * 60 * 24 * 30,
   name: 'recent-views',
   path: '/',

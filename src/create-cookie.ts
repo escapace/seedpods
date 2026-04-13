@@ -66,7 +66,7 @@ const attributes = (cookie: SeedpodsParsedCookieOptions, expire = false) => {
  * @typeParam T - Key used to read, write, and delete this cookie through the cookie interface.
  * @typeParam U - Cookie protection mode.
  * @typeParam V - Application value stored in the cookie.
- * @param options - Cookie configuration, including the key, key material, and transport attributes.
+ * @param options - Cookie configuration, including the logical cookie key, configured cryptographic keys, and transport attributes.
  * @returns A cookie definition that can be added to a jar.
  * @throws When the cookie options are invalid.
  */
@@ -135,7 +135,7 @@ export const createCookie = <T extends string, U extends SeedpodsCookieType, V>(
             return
           }
 
-          const cookieValue = await to(value, options.keys)
+          const cookieValue = await to(value, parsedCookie.keys)
 
           // Defensive branch: the current encoder produces a non-empty buffer for any defined
           // cookie value, so the codec should normally return a string here. Keep this guard in

@@ -20,6 +20,7 @@ export { deriveKey } from './utilities/derive-key'
 export { parseCookieHeader } from './utilities/parse-cookie-header'
 export type {
   SeedpodsCookie,
+  SeedpodsConfiguredKey,
   SeedpodsCookieHeader,
   SeedpodsCookieStateType,
   SeedpodsCookieKey,

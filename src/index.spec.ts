@@ -14,10 +14,14 @@ const keyA = await deriveKey('key-a', { iterations: 1 })
 const keyB = await deriveKey('key-b', { iterations: 1 })
 const keyC = await deriveKey('key-c', { iterations: 1 })
 const keyD = await deriveKey('key-d', { iterations: 1 })
+const configuredKeyA = { id: 'key-a', value: keyA } as const
+const configuredKeyB = { id: 'key-b', value: keyB } as const
+const configuredKeyC = { id: 'key-c', value: keyC } as const
+const configuredKeyD = { id: 'key-d', value: keyD } as const
 
 const vixen = createCookie({
   key: 'vixen',
-  keys: [keyA, keyC],
+  keys: [configuredKeyA, configuredKeyC],
   maxAge: 86_400,
   name: 'vixen',
   prefix: '__Secure-',
@@ -27,7 +31,7 @@ const vixen = createCookie({
 
 const vixenTwo = createCookie({
   key: 'vixenTwo',
-  keys: [keyB],
+  keys: [configuredKeyB],
   maxAge: 86_400,
   name: 'vixen',
   path: '/two',
@@ -40,7 +44,7 @@ const vixenTwo = createCookie({
 const vixenThree = createCookie({
   domain: 'example.com',
   key: 'vixenThree',
-  keys: [keyC],
+  keys: [configuredKeyC],
   maxAge: 86_400,
   name: 'vixen',
   prefix: '__Secure-',
@@ -51,7 +55,7 @@ const vixenThree = createCookie({
 const tycho = createCookie<'tycho', 'aes-gcm', string[]>({
   domain: 'example.com',
   key: 'tycho',
-  keys: [keyB, keyA],
+  keys: [configuredKeyB, configuredKeyA],
   path: '/tycho',
   type: 'aes-gcm',
 })
@@ -59,14 +63,14 @@ const tycho = createCookie<'tycho', 'aes-gcm', string[]>({
 const dazzle = createCookie<'dazzle', 'hmac', number>({
   httpOnly: true,
   key: 'dazzle',
-  keys: [keyC, keyB],
+  keys: [configuredKeyC, configuredKeyB],
   sameSite: 'Lax',
   type: 'hmac',
 })
 
 const ball = createCookie({
   key: 'ball',
-  keys: [keyD],
+  keys: [configuredKeyD],
   path: '/',
   prefix: '__Host-',
   secure: true,
@@ -75,7 +79,7 @@ const ball = createCookie({
 
 const crumb = createCookie<'crumb', 'hmac', string>({
   key: 'crumb',
-  keys: [keyA],
+  keys: [configuredKeyA],
   partitioned: true,
   sameSite: 'None',
   secure: true,
@@ -84,13 +88,20 @@ const crumb = createCookie<'crumb', 'hmac', string>({
 
 const childSeedpodsJar = createJar().put(dazzle).put(ball)
 const seedpodsJar = createJar().put(vixen).put(tycho).combine(childSeedpodsJar)
-const malformedHmacCookieValues = ['a.b', 'abc.def', 'AQ.b', 'Zm8.YQ', 'hello.world', 'AA.BB']
+const malformedHmacCookieValues = [
+  'a.b',
+  'abc.def',
+  'AQ.b.c',
+  'Zm8.YQ.zz',
+  'hello.world.signature',
+  'AA.BB.CC',
+]
 const encodeWithPolicy = async (value: unknown, options: Parameters<typeof encode>[1]) =>
   encode(value, options, await policyFingerprint(options))
 
 describe('createCookie', () => {
   it('treats undecodable payloads as indecipherable', async () => {
-    const cookieValue = await toHmac(Buffer.from('not-json'), [keyC, keyB])
+    const cookieValue = await toHmac(Buffer.from('not-json'), [configuredKeyC, configuredKeyB])
 
     const state = await dazzle[SEEDPODS_SYMBOL_COOKIE].fromString(cookieValue)
 
@@ -119,7 +130,7 @@ describe('createCookie', () => {
   it('serializes cookies without attributes when none are configured', async () => {
     const plain = createCookie<'plain', 'hmac', string>({
       key: 'plain',
-      keys: [keyA],
+      keys: [configuredKeyA],
       type: 'hmac',
     })
 
@@ -242,11 +253,47 @@ describe('useCookies', () => {
     }
   })
 
+  it('expires cookies whose key identifier is unknown', async () => {
+    const validValue = await toHmac(
+      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
+      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+    )
+    const [, payload, signature] = validValue!.split('.')
+    const unknownIdentifier = Buffer.from('missing-key').toString('base64url')
+    const cookies = await useCookies(
+      `dazzle=${unknownIdentifier}.${payload}.${signature}`,
+      childSeedpodsJar,
+    )
+
+    assert.equal(cookies.get('dazzle'), undefined)
+    assert.deepEqual(await cookies.values(), [
+      'dazzle=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Max-Age=0; SameSite=Lax',
+    ])
+  })
+
+  it('expires cookies whose key identifier points to the wrong configured key', async () => {
+    const validValue = await toHmac(
+      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
+      [configuredKeyC],
+    )
+    const [, payload, signature] = validValue!.split('.')
+    const wrongIdentifier = Buffer.from(configuredKeyB.id).toString('base64url')
+    const cookies = await useCookies(
+      `dazzle=${wrongIdentifier}.${payload}.${signature}`,
+      childSeedpodsJar,
+    )
+
+    assert.equal(cookies.get('dazzle'), undefined)
+    assert.deepEqual(await cookies.values(), [
+      'dazzle=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Max-Age=0; SameSite=Lax',
+    ])
+  })
+
   it('rewrites cookies when the embedded transport policy changes', async () => {
     const previous = createCookie<'dazzle', 'hmac', number>({
       httpOnly: true,
       key: 'dazzle',
-      keys: [keyC, keyB],
+      keys: [configuredKeyC, configuredKeyB],
       sameSite: 'Lax',
       type: 'hmac',
     })
@@ -254,7 +301,7 @@ describe('useCookies', () => {
     const current = createCookie<'dazzle', 'hmac', number>({
       httpOnly: true,
       key: 'dazzle',
-      keys: [keyC, keyB],
+      keys: [configuredKeyC, configuredKeyB],
       sameSite: 'Strict',
       type: 'hmac',
     })
@@ -278,7 +325,7 @@ describe('useCookies', () => {
   it('rewrites cookies when the partitioned flag changes', async () => {
     const previous = createCookie<'crumb', 'hmac', string>({
       key: 'crumb',
-      keys: [keyA],
+      keys: [configuredKeyA],
       sameSite: 'None',
       secure: true,
       type: 'hmac',
@@ -286,7 +333,7 @@ describe('useCookies', () => {
 
     const current = createCookie<'crumb', 'hmac', string>({
       key: 'crumb',
-      keys: [keyA],
+      keys: [configuredKeyA],
       partitioned: true,
       sameSite: 'None',
       secure: true,
@@ -311,7 +358,7 @@ describe('useCookies', () => {
   it('rewrites cookies when the partitioned flag is removed', async () => {
     const previous = createCookie<'crumb', 'hmac', string>({
       key: 'crumb',
-      keys: [keyA],
+      keys: [configuredKeyA],
       partitioned: true,
       sameSite: 'None',
       secure: true,
@@ -320,7 +367,7 @@ describe('useCookies', () => {
 
     const current = createCookie<'crumb', 'hmac', string>({
       key: 'crumb',
-      keys: [keyA],
+      keys: [configuredKeyA],
       sameSite: 'None',
       secure: true,
       type: 'hmac',
@@ -347,13 +394,13 @@ describe('useCookies', () => {
         { author: 'escape', change: 'triangle' },
         vixen[SEEDPODS_SYMBOL_COOKIE].options,
       ))!,
-      [keyC],
+      [configuredKeyC],
     ))!}; tycho=${(await toAesGcm(
       (await encodeWithPolicy(
         ['threw', 'satellites', 'class'],
         tycho[SEEDPODS_SYMBOL_COOKIE].options,
       ))!,
-      [keyB, keyA],
+      [configuredKeyB, configuredKeyA],
     ))!}; __Host-ball=${Buffer.from('ride problem cause market').toString('base64url')}; abc=qwe`
 
     const t = await useCookies(cookieHeader, seedpodsJar, {
@@ -454,7 +501,7 @@ describe('useCookies', () => {
         .put(
           createCookie({
             key: 'vixen',
-            keys: [keyA, keyC],
+            keys: [configuredKeyA, configuredKeyC],
             prefix: '__Secure-',
             secure: true,
             type: 'aes-gcm',
@@ -469,7 +516,7 @@ describe('useCookies', () => {
         ['threw', 'satellites', 'class'],
         tycho[SEEDPODS_SYMBOL_COOKIE].options,
       ))!,
-      [keyB, keyA],
+      [configuredKeyB, configuredKeyA],
     ))!}`
     let reducerShouldThrow = true
 
@@ -505,19 +552,19 @@ describe('useCookies', () => {
     const cookieHeader = [
       `__Secure-vixen=${(await toAesGcm(
         (await encodeWithPolicy({ key: 'vixen' }, vixen[SEEDPODS_SYMBOL_COOKIE].options))!,
-        [keyC],
+        [configuredKeyC],
       ))!}`,
       'qweqweqwe=123',
       `__Secure-vixen=${(await toAesGcm(
         (await encodeWithPolicy({ key: 'vixenTwo' }, vixenTwo[SEEDPODS_SYMBOL_COOKIE].options))!,
-        [keyB],
+        [configuredKeyB],
       ))!}`,
       `__Secure-vixen=${(await toAesGcm(
         (await encodeWithPolicy(
           { key: 'vixenThree' },
           vixenThree[SEEDPODS_SYMBOL_COOKIE].options,
         ))!,
-        [keyC],
+        [configuredKeyC],
       ))!}`,
     ].join('; ')
 
@@ -533,5 +580,65 @@ describe('useCookies', () => {
     assert.deepEqual(await t.get('vixenThree'), {
       key: 'vixenThree',
     })
+  })
+
+  it('still tries each shared-name cookie definition independently', async () => {
+    const one = createCookie<'one', 'aes-gcm', { key: string }>({
+      key: 'one',
+      keys: [configuredKeyA],
+      name: 'shared',
+      type: 'aes-gcm',
+    })
+    const two = createCookie<'two', 'aes-gcm', { key: string }>({
+      key: 'two',
+      keys: [configuredKeyB],
+      name: 'shared',
+      type: 'aes-gcm',
+    })
+    const three = createCookie<'three', 'aes-gcm', { key: string }>({
+      key: 'three',
+      keys: [configuredKeyC],
+      name: 'shared',
+      type: 'aes-gcm',
+    })
+
+    const countedCookies = [one, two, three].map((cookie) => {
+      let calls = 0
+      const metadata = cookie[SEEDPODS_SYMBOL_COOKIE] as {
+        fromString: (value: string | undefined) => Promise<SeedpodsCookieState>
+      }
+      const originalFromString = metadata.fromString
+
+      metadata.fromString = async (value) => {
+        calls += 1
+        return await originalFromString(value)
+      }
+
+      return {
+        cookie,
+        calls: () => calls,
+      }
+    })
+
+    const header = `shared=${(await toAesGcm(
+      (await encodeWithPolicy({ key: 'two' }, two[SEEDPODS_SYMBOL_COOKIE].options))!,
+      [configuredKeyB],
+    ))!}`
+
+    const cookies = await useCookies(
+      header,
+      createJar()
+        .put(countedCookies[0].cookie)
+        .put(countedCookies[1].cookie)
+        .put(countedCookies[2].cookie),
+    )
+
+    assert.deepEqual(cookies.get('one'), undefined)
+    assert.deepEqual(cookies.get('two'), { key: 'two' })
+    assert.deepEqual(cookies.get('three'), undefined)
+    assert.deepEqual(
+      countedCookies.map((entry) => entry.calls()),
+      [1, 1, 1],
+    )
   })
 })
