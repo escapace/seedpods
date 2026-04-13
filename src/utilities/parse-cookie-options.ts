@@ -16,6 +16,8 @@ import type {
   SeedpodsParsedCookieOptions,
   SeedpodsParsedCookieOptionsForType,
 } from '../types'
+import { validateCookieDomain as validateNormalizedCookieDomain } from './normalize-cookie-domain'
+import { validateCookiePath as validateNormalizedCookiePath } from './normalize-cookie-path'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -48,16 +50,7 @@ function validateCookieToken(
   if (!SEEDPODS_COOKIE_TOKEN_REGEXP.test(value)) {
     causes.push({
       option,
-      reason: 'contains characters that are not valid in a cookie token',
-      type: 'CookieOptionValueInvalid',
-    })
-    return
-  }
-
-  if (option === 'name' && SEEDPODS_COOKIE_PREFIXES.some((prefix) => value.startsWith(prefix))) {
-    causes.push({
-      option,
-      reason: 'must not start with the reserved "__Secure-" or "__Host-" prefixes',
+      reason: 'contains characters that are not valid in an HTTP token',
       type: 'CookieOptionValueInvalid',
     })
     return
@@ -81,28 +74,14 @@ function validateCookieDomain(value: unknown, causes: SeedpodsErrorCause[]): str
     return
   }
 
-  if (value.length === 0) {
-    causes.push({
-      option: 'domain',
-      reason: 'must not be empty',
-      type: 'CookieOptionValueInvalid',
-    })
+  const result = validateNormalizedCookieDomain(value)
+
+  if (!result.ok) {
+    causes.push(...result.causes)
     return
   }
 
-  const firstCharacter = value.charAt(0)
-  const lastCharacter = value.charAt(value.length - 1)
-
-  if (firstCharacter === '-' || lastCharacter === '.' || lastCharacter === '-') {
-    causes.push({
-      option: 'domain',
-      reason: 'must not start with "-" or end with "." or "-"',
-      type: 'CookieOptionValueInvalid',
-    })
-    return
-  }
-
-  return value
+  return result.value
 }
 
 function validateCookieBoolean(
@@ -178,29 +157,14 @@ function validateCookiePath(value: unknown, causes: SeedpodsErrorCause[]): strin
     return
   }
 
-  if (value.length === 0) {
-    causes.push({
-      option: 'path',
-      reason: 'must not be empty',
-      type: 'CookieOptionValueInvalid',
-    })
+  const result = validateNormalizedCookiePath(value)
+
+  if (!result.ok) {
+    causes.push(...result.causes)
     return
   }
 
-  for (let index = 0; index < value.length; index++) {
-    const code = value.charCodeAt(index)
-
-    if (code < 0x20 || code > 0x7e || value.charAt(index) === ';') {
-      causes.push({
-        option: 'path',
-        reason: 'contains characters outside the visible ASCII range or the ";" separator',
-        type: 'CookieOptionValueInvalid',
-      })
-      return
-    }
-  }
-
-  return value
+  return result.value
 }
 
 function validateCookieLiteral<Value extends string>(
@@ -260,6 +224,58 @@ function validateCookieSameSite(
     '"Strict", "Lax", or "None"',
     causes,
   )
+}
+
+function inferCookiePrefixFromName(value: string): SeedpodsCookiePrefix | undefined {
+  const normalized = value.toLowerCase()
+
+  if (normalized.startsWith('__host-')) {
+    return '__Host-'
+  }
+
+  if (normalized.startsWith('__secure-')) {
+    return '__Secure-'
+  }
+
+  return
+}
+
+function validatePrefixedCookieName(
+  value: string,
+  options: Pick<SeedpodsParsedCookieOptions, 'domain' | 'path' | 'secure'>,
+  causes: SeedpodsErrorCause[],
+): void {
+  const prefix = inferCookiePrefixFromName(value)
+
+  if (prefix === undefined) {
+    return
+  }
+
+  if (options.secure !== true) {
+    causes.push({
+      prefix,
+      reason: 'must set "secure" to true',
+      type: 'CookiePrefixConfigurationInvalid',
+    })
+  }
+
+  if (prefix === '__Host-') {
+    if (options.domain !== undefined) {
+      causes.push({
+        prefix,
+        reason: 'must not set "domain"',
+        type: 'CookiePrefixConfigurationInvalid',
+      })
+    }
+
+    if (options.path !== '/') {
+      causes.push({
+        prefix,
+        reason: 'must set "path" to "/"',
+        type: 'CookiePrefixConfigurationInvalid',
+      })
+    }
+  }
 }
 
 function validateCookieType(
@@ -431,38 +447,23 @@ export const parseCookieOptions = <
     })
   }
 
-  if (cookiePrefix === '__Secure-' && cookieSecure !== true) {
-    causes.push({
-      prefix: cookiePrefix,
-      reason: 'must set "secure" to true',
-      type: 'CookiePrefixConfigurationInvalid',
-    })
-  }
+  const effectiveCookieName =
+    cookieKey === undefined
+      ? undefined
+      : cookiePrefix === undefined
+        ? (cookieName ?? cookieKey)
+        : `${cookiePrefix}${cookieName ?? cookieKey}`
 
-  if (cookiePrefix === '__Host-') {
-    if (cookieSecure !== true) {
-      causes.push({
-        prefix: cookiePrefix,
-        reason: 'must set "secure" to true',
-        type: 'CookiePrefixConfigurationInvalid',
-      })
-    }
-
-    if (cookieDomain !== undefined) {
-      causes.push({
-        prefix: cookiePrefix,
-        reason: 'must not set "domain"',
-        type: 'CookiePrefixConfigurationInvalid',
-      })
-    }
-
-    if (cookiePath !== '/') {
-      causes.push({
-        prefix: cookiePrefix,
-        reason: 'must set "path" to "/"',
-        type: 'CookiePrefixConfigurationInvalid',
-      })
-    }
+  if (effectiveCookieName !== undefined) {
+    validatePrefixedCookieName(
+      effectiveCookieName,
+      {
+        domain: cookieDomain,
+        path: cookiePath,
+        secure: cookieSecure,
+      },
+      causes,
+    )
   }
 
   if (
@@ -480,10 +481,7 @@ export const parseCookieOptions = <
     key: cookieKey as SeedpodsCookieKey,
     keys: cookieKeys,
     ...(cookieMaxAge === undefined ? {} : { maxAge: cookieMaxAge }),
-    name:
-      cookiePrefix === undefined
-        ? (cookieName ?? cookieKey)
-        : `${cookiePrefix}${cookieName ?? cookieKey}`,
+    name: effectiveCookieName!,
     ...(cookiePath === undefined ? {} : { path: cookiePath }),
     ...(cookiePrefix === undefined ? {} : { prefix: cookiePrefix }),
     ...(cookieSameSite === undefined ? {} : { sameSite: cookieSameSite }),

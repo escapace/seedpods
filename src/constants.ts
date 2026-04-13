@@ -18,7 +18,7 @@ export const SEEDPODS_COOKIE_OPTION_KEY_SET = new Set<string>([
 
 export const SEEDPODS_COOKIE_PREFIXES = ['__Secure-', '__Host-'] as const
 export const SEEDPODS_COOKIE_SAME_SITE_VALUES = ['Strict', 'Lax', 'None'] as const
-export const SEEDPODS_COOKIE_TOKEN_REGEXP = /^(?=[\x20-\x7E]*$)[^\s"(),:;<=>?@[\\\]{}]+$/
+export const SEEDPODS_COOKIE_TOKEN_REGEXP = /^[!#$%&'*+\-.^`|~\w]+$/
 export const SEEDPODS_COOKIE_TYPES = ['aes-gcm', 'hmac'] as const
 export const SEEDPODS_ERROR_TYPES = [
   'CookieExpected',

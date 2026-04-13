@@ -88,6 +88,7 @@ export async function handleRequest(request: Request) {
 - Each jar key must be unique. Calling `put` with the same key twice throws.
 - Different cookie definitions may still share one cookie name when the decoded value carries a different logical key.
 - A reducer may return `undefined` to delete a cookie. If a reducer throws, that update is aborted and the earlier state is preserved.
+- `Domain` must be an ASCII host name. Internationalized domains must use their ASCII form, for example `xn--bcher-kva.example` instead of `bücher.example`.
 - Reading a cookie with a fallback key causes the next output to write it back with the first configured key. Reading a cookie whose transport policy differs from the current definition rewrites it with the current `maxAge`, `sameSite`, `httpOnly`, and `secure` attributes. Some rewrites take effect only when the user agent accepts the `Set-Cookie` header for that response. Under [`rfc6265bis`](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html), `SameSite=Lax` and `SameSite=Strict` cookies are not set in responses to cross-site subresource requests or cross-site nested navigations. Changes to `name`, `prefix`, `domain`, and `path` are not migrated automatically.
 - If a configured cookie cannot be verified or decoded, `get()` returns `undefined` and the next output expires it.
 - `values()` and `entries()` emit only changes. Deleting an already unset cookie records no new change, and unchanged values do not produce a `Set-Cookie` header.

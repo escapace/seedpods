@@ -144,9 +144,21 @@ describe('parse-cookie-options', () => {
     assertHasCause(error, 'CookieOptionMissing', (cause) => cause.option === 'type')
   })
 
-  it('requires cookie key and name values to be non-empty strings with valid token characters', () => {
+  it('requires cookie key and name values to be non-empty strings with valid HTTP token characters', () => {
+    const token = "!#$%&'*+-.^_`|~AZaz09"
+
+    assert.equal(
+      parseCookieOptions({
+        key: token,
+        keys: [hmacKey],
+        name: token,
+        type: 'hmac',
+      }).name,
+      token,
+    )
+
     const invalidKeyError = expectSeedpodsError({
-      key: 'bad key',
+      key: 'bad/key',
       keys: [hmacKey],
       type: 'hmac',
     })
@@ -154,24 +166,35 @@ describe('parse-cookie-options', () => {
     assertHasCause(
       invalidKeyError,
       'CookieOptionValueInvalid',
-      (cause) => cause.option === 'key' && cause.reason.includes('cookie token'),
+      (cause) => cause.option === 'key' && cause.reason.includes('HTTP token'),
     )
 
     const invalidNameError = expectSeedpodsError({
       key: 'session',
       keys: [hmacKey],
-      name: '__Secure-session',
+      name: 'bad/name',
       type: 'hmac',
     })
 
     assertHasCause(
       invalidNameError,
       'CookieOptionValueInvalid',
-      (cause) => cause.option === 'name' && cause.reason.includes('reserved'),
+      (cause) => cause.option === 'name' && cause.reason.includes('HTTP token'),
     )
   })
 
-  it('validates domain and path constraints', () => {
+  it('validates and normalizes domain and path constraints', () => {
+    assert.equal(
+      parseCookieOptions({
+        domain: '.Example.COM',
+        key: 'session',
+        keys: [hmacKey],
+        path: '/app',
+        type: 'hmac',
+      }).domain,
+      'example.com',
+    )
+
     const invalidDomainError = expectSeedpodsError({
       domain: '-example.com',
       key: 'session',
@@ -182,7 +205,20 @@ describe('parse-cookie-options', () => {
     assertHasCause(
       invalidDomainError,
       'CookieOptionValueInvalid',
-      (cause) => cause.option === 'domain' && cause.reason.includes('must not start'),
+      (cause) => cause.option === 'domain' && cause.reason.includes('NR-LDH'),
+    )
+
+    const ipDomainError = expectSeedpodsError({
+      domain: '127.0.0.1',
+      key: 'session',
+      keys: [hmacKey],
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      ipDomainError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'domain' && cause.reason.includes('IP literal'),
     )
 
     const invalidPathError = expectSeedpodsError({
@@ -195,7 +231,20 @@ describe('parse-cookie-options', () => {
     assertHasCause(
       invalidPathError,
       'CookieOptionValueInvalid',
-      (cause) => cause.option === 'path' && cause.reason.includes('ASCII range'),
+      (cause) => cause.option === 'path' && cause.reason.includes('path-value'),
+    )
+
+    const relativePathError = expectSeedpodsError({
+      key: 'session',
+      keys: [hmacKey],
+      path: 'app',
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      relativePathError,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'path' && cause.reason.includes('start with "/"'),
     )
   })
 
@@ -325,6 +374,84 @@ describe('parse-cookie-options', () => {
       error,
       'CookiePrefixConfigurationInvalid',
       (cause) => cause.prefix === '__Host-' && cause.reason.includes('path'),
+    )
+  })
+
+  it('enforces reserved-prefix invariants from the final cookie name case-insensitively', () => {
+    const secureError = expectSeedpodsError({
+      key: 'session',
+      keys: [hmacKey],
+      name: '__SeCuRe-session',
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      secureError,
+      'CookiePrefixConfigurationInvalid',
+      (cause) => cause.prefix === '__Secure-' && cause.reason.includes('secure'),
+    )
+
+    const hostNameError = expectSeedpodsError({
+      key: 'session',
+      keys: [hmacKey],
+      name: '__hOsT-session',
+      secure: true,
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      hostNameError,
+      'CookiePrefixConfigurationInvalid',
+      (cause) => cause.prefix === '__Host-' && cause.reason.includes('path'),
+    )
+
+    const hostKeyError = expectSeedpodsError({
+      key: '__HoSt-session',
+      keys: [hmacKey],
+      secure: true,
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      hostKeyError,
+      'CookiePrefixConfigurationInvalid',
+      (cause) => cause.prefix === '__Host-' && cause.reason.includes('path'),
+    )
+  })
+
+  it('accepts manually prefixed cookie names when their invariants are satisfied', () => {
+    assert.equal(
+      parseCookieOptions({
+        key: 'session',
+        keys: [hmacKey],
+        name: '__SeCuRe-session',
+        secure: true,
+        type: 'hmac',
+      }).name,
+      '__SeCuRe-session',
+    )
+
+    assert.equal(
+      parseCookieOptions({
+        key: 'session',
+        keys: [hmacKey],
+        name: '__hOsT-session',
+        path: '/',
+        secure: true,
+        type: 'hmac',
+      }).name,
+      '__hOsT-session',
+    )
+
+    assert.equal(
+      parseCookieOptions({
+        key: '__HoSt-session',
+        keys: [hmacKey],
+        path: '/',
+        secure: true,
+        type: 'hmac',
+      }).name,
+      '__HoSt-session',
     )
   })
 
@@ -499,6 +626,7 @@ describe('parse-cookie-options', () => {
     assert.isUndefined(parseCookieValue({ options: null, value: true }))
     assert.isUndefined(parseCookieValue({ options: { key: '' }, value: true }))
     assert.isUndefined(parseCookieValue({ options: { key: 'bad key' }, value: true }))
+    assert.isUndefined(parseCookieValue({ options: { key: 'bad/key', policy: 'p' }, value: true }))
     assert.isUndefined(parseCookieValue({ options: { key: 'session', maxAge: 60 }, value: true }))
     assert.isUndefined(parseCookieValue({ options: { key: 'session', policy: '' }, value: true }))
     assert.isUndefined(parseCookieValue({ options: { key: 'session', policy: 1 }, value: true }))
