@@ -1,5 +1,97 @@
 # seedpods
 
+Define cookies once as named values in application code, choose signing or encryption, provide multiple keys for rotation, and set transport attributes such as path, domain, SameSite, HttpOnly, Secure, and Max-Age. The library reads them from the incoming `Cookie` header, returns a typed cookie interface for getting, setting, and deleting values, and emits only the changed `Set-Cookie` headers for the response. Cookie definitions can be grouped into reusable jars and combined across modules.
+
+## Install
+
+```sh
+pnpm add seedpods
+```
+
+## Usage
+
+A typical request and response flow has four parts: derive or load keys, define cookies, group them into jars, and open them for each request.
+
+```ts
+import { createCookie, createJar, deriveKey, useCookies } from 'seedpods'
+
+// Derive or load keys once at startup. The first key writes new cookies, and later
+// keys are still accepted for reading older cookies during rotation.
+const currentSessionKey = await deriveKey(process.env.SESSION_SECRET!, { salt: 'session' })
+const previousSessionKey = await deriveKey(process.env.SESSION_SECRET_PREVIOUS!, {
+  salt: 'session',
+})
+const recentViewsKey = await deriveKey(process.env.RECENT_VIEWS_SECRET!, {
+  salt: 'recent-views',
+})
+
+// Define cookies.
+const sessionCookie = createCookie<'session', 'aes-gcm', { userId: string }>({
+  key: 'session',
+  type: 'aes-gcm',
+  keys: [currentSessionKey, previousSessionKey],
+  prefix: '__Host-',
+  path: '/',
+  secure: true,
+  httpOnly: true,
+  sameSite: 'Lax',
+  maxAge: 60 * 60 * 24 * 7,
+})
+
+const recentViewsCookie = createCookie<'recentViews', 'hmac', string[]>({
+  key: 'recentViews',
+  name: 'recent-views',
+  type: 'hmac',
+  keys: [recentViewsKey],
+  path: '/',
+  secure: true,
+  sameSite: 'Lax',
+  maxAge: 60 * 60 * 24 * 30,
+})
+
+// Group cookies into reusable jars.
+const authCookies = createJar().put(sessionCookie)
+const uiCookies = createJar().put(recentViewsCookie)
+const appCookies = createJar().combine(authCookies).combine(uiCookies)
+
+export async function handleRequest(request: Request) {
+  const cookies = await useCookies(request.headers.get('cookie') ?? undefined, appCookies, {
+    recentViews(previous = [], next = []) {
+      return [...previous, ...next].slice(-10)
+    },
+  })
+
+  const signOut = new URL(request.url).pathname === '/logout'
+
+  if (signOut) {
+    cookies.del('session')
+  } else if (cookies.get('session') === undefined) {
+    cookies.set('session', { userId: '123' })
+  }
+
+  cookies.set('recentViews', ['/docs/getting-started'])
+
+  const responseHeaders = new Headers()
+  for (const value of await cookies.values()) {
+    responseHeaders.append('Set-Cookie', value)
+  }
+
+  return new Response('ok', { headers: responseHeaders })
+}
+```
+
+`useCookies()` returns only the changed `Set-Cookie` values through `values()`. Use `entries()` when the cookie key is also needed.
+
+### Behavior notes
+
+- `useCookies()` accepts the raw `Cookie` header value.
+- Each jar key must be unique. Calling `put` with the same key twice throws.
+- Different cookie definitions may still share one cookie name when the decoded value carries a different logical key.
+- A reducer may return `undefined` to delete a cookie. If a reducer throws, that update is aborted and the earlier state is preserved.
+- Reading a cookie with a fallback key causes the next output to write it back with the first key.
+- If a configured cookie cannot be verified or decoded, `get()` returns `undefined` and the next output expires it.
+- `values()` and `entries()` emit only changes. Deleting an already unset cookie records no new change, and unchanged values do not produce a `Set-Cookie` header.
+
 # API
 
 ## function assertCookie [↗](src/create-cookie.ts#L149-L163 'assertCookie')

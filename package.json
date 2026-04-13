@@ -1,6 +1,6 @@
 {
   "name": "seedpods",
-  "description": "",
+  "description": "Define reusable signed or encrypted cookies once, then read them from Cookie headers and emit changed Set-Cookie headers through a typed interface.",
   "version": "0.0.0",
   "author": {
     "name": "escapace",

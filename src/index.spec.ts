@@ -265,6 +265,39 @@ describe('useCookies', () => {
     })
   })
 
+  it('keeps state intact when a reducer throws', async () => {
+    const tychoHeader = `tycho=${(await toAesGcm(
+      encode(['threw', 'satellites', 'class'], tycho[SEEDPODS_SYMBOL_COOKIE].options)!,
+      [keyB, keyA],
+    ))!}`
+    let reducerShouldThrow = true
+
+    const cookies = await useCookies(tychoHeader, seedpodsJar, {
+      tycho(previous = [], next = []) {
+        if (reducerShouldThrow) {
+          reducerShouldThrow = false
+          throw new Error('Reducer failed.')
+        }
+
+        return [...previous, ...next]
+      },
+    })
+
+    assert.deepEqual(cookies.get('tycho'), ['threw', 'satellites', 'class'])
+    assert.throws(() => cookies.set('tycho', ['later']), /Reducer failed\./)
+    assert.deepEqual(cookies.get('tycho'), ['threw', 'satellites', 'class'])
+    assert.deepEqual(await cookies.values(), [])
+
+    cookies.set('tycho', ['later'])
+
+    assert.deepEqual(cookies.get('tycho'), ['threw', 'satellites', 'class', 'later'])
+
+    const values = await cookies.values()
+
+    assert.equal(values.length, 1)
+    assert.ok(values[0].startsWith('tycho='))
+  })
+
   it('handles cookies that share a name', async () => {
     const seedpodsJarWithSharedCookieName = createJar().put(vixen).put(vixenTwo).put(vixenThree)
 
