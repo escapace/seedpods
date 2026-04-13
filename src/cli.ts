@@ -13,7 +13,7 @@ Repository:
 Options:
   --secret     [secret]       [string] string for encryption and decryption (required)
   --iterations [iterations]   [number] number of PBKDF2 iterations (default: 600000)
-  --salt       [port]         [string] string that is added to the secret (default: 3000)
+  --salt       [port]         [string] string that is added to the secret
   -h, --help                  Display this message
 `)
 
