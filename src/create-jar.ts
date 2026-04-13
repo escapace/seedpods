@@ -38,7 +38,12 @@ const applyJarAction = (state: SeedpodsJarState, action: SeedpodsJarAction): See
       const key = cookie[SEEDPODS_SYMBOL_COOKIE].options.key
 
       if (Object.keys(state.cookies).includes(key)) {
-        throw new Error(`Cookie with key '${key}' already exists.`)
+        throw new SeedpodsError([
+          {
+            key,
+            type: 'CookieKeyAlreadyExists',
+          },
+        ])
       }
 
       return {

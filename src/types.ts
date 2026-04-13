@@ -217,6 +217,7 @@ export type SeedpodsParsedCookieOptionsForType<
  */
 export interface SeedpodsErrorMetadata {
   CookieExpected: { actual: unknown }
+  CookieKeyAlreadyExists: { key: string }
   CookieOptionMissing: { option: string }
   CookieOptionsExpectedObject: { actual: unknown }
   CookieOptionTypeInvalid: { actual: unknown; expected: string; option: string }
@@ -224,6 +225,7 @@ export interface SeedpodsErrorMetadata {
   CookieOptionValueInvalid: { option: string; reason: string }
   CookiePrefixConfigurationInvalid: { prefix: '__Host-' | '__Secure-'; reason: string }
   JarExpected: { actual: unknown }
+  UnknownCookieKey: { key: string }
 }
 
 /**
@@ -447,6 +449,9 @@ export type SeedpodsCookiesReducers<SeedpodsJarType extends SeedpodsJarInterface
 /**
  * Mutable cookie interface returned by {@link useCookies}.
  *
+ * @remarks
+ * Call `set`, `del`, or `refresh` to record deliberate cookie writes. Calling `refresh` rewrites the current cookie value without changing its logical value.
+ *
  * @typeParam SeedpodsJarType - Jar type that defines the available cookie keys and value types.
  */
 export interface SeedpodsCookies<SeedpodsJarType extends SeedpodsJarInterface> {
@@ -466,6 +471,14 @@ export interface SeedpodsCookies<SeedpodsJarType extends SeedpodsJarInterface> {
   get: <SeedpodsKey extends SeedpodsJarKeys<SeedpodsJarType>>(
     key: SeedpodsKey,
   ) => SeedpodsJarCookieValue<SeedpodsJarType, SeedpodsKey> | undefined
+
+  /**
+   * Rewrites the current value for one cookie key without changing that value.
+   *
+   * @remarks
+   * This is useful for renewing browser-managed attributes such as `Max-Age` or `Expires` when the logical value stays the same.
+   */
+  refresh: (key: SeedpodsJarKeys<SeedpodsJarType>) => void
 
   /**
    * Records a new value for one cookie key.

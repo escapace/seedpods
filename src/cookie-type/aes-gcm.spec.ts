@@ -52,6 +52,7 @@ describe('aes-gcm', () => {
   it('malformed', async () => {
     assert.equal(await from('', [keyA]), undefined)
     assert.equal(await from('.asd', [keyA]), undefined)
+    assert.equal(await from('.cipher.iv', [keyA]), undefined)
     assert.equal(
       await from((await to(Buffer.from('hello'), [keyA]))!.slice(0, -1), [keyA]),
       undefined,

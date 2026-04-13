@@ -222,7 +222,14 @@ describe('createJar', () => {
 describe('useCookies', () => {
   it('returns the expected interface', async () => {
     assert.isFunction(useCookies)
-    assert.hasAllKeys(await useCookies('', seedpodsJar), ['del', 'get', 'set', 'values', 'entries'])
+    assert.hasAllKeys(await useCookies('', seedpodsJar), [
+      'del',
+      'entries',
+      'get',
+      'refresh',
+      'set',
+      'values',
+    ])
   })
 
   it('does not throw on malformed hmac cookie values and expires them', async () => {
@@ -287,6 +294,56 @@ describe('useCookies', () => {
     assert.deepEqual(await cookies.values(), [
       'dazzle=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Max-Age=0; SameSite=Lax',
     ])
+  })
+
+  it('refreshes an unchanged cookie when asked explicitly', async () => {
+    const header = `dazzle=${(await toHmac(
+      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
+      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+    ))!}`
+
+    const cookies = await useCookies(header, childSeedpodsJar)
+
+    assert.equal(cookies.get('dazzle'), 100)
+    assert.deepEqual(await cookies.values(), [])
+
+    cookies.refresh('dazzle')
+    cookies.refresh('dazzle')
+
+    const values = await cookies.values()
+
+    assert.lengthOf(values, 1)
+    assert.match(values[0], /^dazzle=/)
+    assert.include(values[0], 'HttpOnly')
+    assert.include(values[0], 'SameSite=Lax')
+  })
+
+  it('lets refresh force a rewrite after set receives the same logical value', async () => {
+    const header = `dazzle=${(await toHmac(
+      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
+      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+    ))!}`
+
+    const cookies = await useCookies(header, childSeedpodsJar)
+
+    cookies.set('dazzle', 100)
+    assert.deepEqual(await cookies.values(), [])
+
+    cookies.refresh('dazzle')
+
+    const values = await cookies.values()
+
+    assert.lengthOf(values, 1)
+    assert.match(values[0], /^dazzle=/)
+  })
+
+  it('treats refresh as a no-op when no current value exists', async () => {
+    const cookies = await useCookies('', childSeedpodsJar)
+
+    cookies.refresh('dazzle')
+
+    assert.equal(cookies.get('dazzle'), undefined)
+    assert.deepEqual(await cookies.values(), [])
   })
 
   it('rewrites cookies when the embedded transport policy changes', async () => {
@@ -484,18 +541,49 @@ describe('useCookies', () => {
 
     assert.hasAllKeys(Object.fromEntries(await t.entries()), ['vixen', 'tycho', 'ball'])
 
-    // @ts-expect-error type
-    assert.throws(() => t.del('abc'))
+    try {
+      // @ts-expect-error type
+      t.del('abc')
+      assert.fail('Expected del to throw.')
+    } catch (error) {
+      assert.ok(isSeedpodsError(error))
+      assert.include(error.message, 'Unknown cookie key "abc".')
+      assert.deepEqual(error.causes, [{ key: 'abc', type: 'UnknownCookieKey' }])
+    }
 
-    // @ts-expect-error type
-    assert.throws(() => t.set('abc', 'hello'))
+    try {
+      // @ts-expect-error type
+      t.set('abc', 'hello')
+      assert.fail('Expected set to throw.')
+    } catch (error) {
+      assert.ok(isSeedpodsError(error))
+      assert.include(error.message, 'Unknown cookie key "abc".')
+      assert.deepEqual(error.causes, [{ key: 'abc', type: 'UnknownCookieKey' }])
+    }
 
-    // @ts-expect-error type
-    assert.throws(() => t.get('abc'))
+    try {
+      // @ts-expect-error type
+      t.refresh('abc')
+      assert.fail('Expected refresh to throw.')
+    } catch (error) {
+      assert.ok(isSeedpodsError(error))
+      assert.include(error.message, 'Unknown cookie key "abc".')
+      assert.deepEqual(error.causes, [{ key: 'abc', type: 'UnknownCookieKey' }])
+    }
+
+    try {
+      // @ts-expect-error type
+      t.get('abc')
+      assert.fail('Expected get to throw.')
+    } catch (error) {
+      assert.ok(isSeedpodsError(error))
+      assert.include(error.message, 'Unknown cookie key "abc".')
+      assert.deepEqual(error.causes, [{ key: 'abc', type: 'UnknownCookieKey' }])
+    }
   })
 
   it('rejects duplicate cookie keys', () => {
-    assert.throws(() => {
+    try {
       createJar()
         .put(vixen)
         .put(
@@ -507,7 +595,13 @@ describe('useCookies', () => {
             type: 'aes-gcm',
           }),
         )
-    })
+
+      assert.fail('Expected duplicate cookie key to throw.')
+    } catch (error) {
+      assert.ok(isSeedpodsError(error))
+      assert.include(error.message, 'Cookie key "vixen" already exists in the jar.')
+      assert.deepEqual(error.causes, [{ key: 'vixen', type: 'CookieKeyAlreadyExists' }])
+    }
   })
 
   it('keeps state intact when a reducer throws', async () => {

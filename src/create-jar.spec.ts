@@ -45,6 +45,9 @@ describe('createJar type level', () => {
     cookies.set('session', 1)
     cookies.set('profile', { name: 'escape' })
     cookies.set('flags', ['a', 'b'])
+    cookies.refresh('session')
+    cookies.refresh('profile')
+    cookies.refresh('flags')
     cookies.del('session')
     cookies.del('profile')
     cookies.del('flags')
@@ -58,6 +61,9 @@ describe('createJar type level', () => {
 
       // @ts-expect-error end-to-end key restriction
       cookies.del('missing')
+
+      // @ts-expect-error end-to-end key restriction
+      cookies.refresh('missing')
 
       // @ts-expect-error end-to-end value restriction
       cookies.set('session', 'wrong')
@@ -87,6 +93,8 @@ describe('createJar type level', () => {
 
     cookies.set('profile', { name: 'combined' })
     cookies.set('session', 2)
+    cookies.refresh('profile')
+    cookies.refresh('session')
 
     if (runTypeErrorBranches) {
       // @ts-expect-error combined jar key restriction
@@ -97,6 +105,9 @@ describe('createJar type level', () => {
 
       // @ts-expect-error combined jar key restriction
       cookies.del('flags')
+
+      // @ts-expect-error combined jar key restriction
+      cookies.refresh('flags')
     }
   })
 

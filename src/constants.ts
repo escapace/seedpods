@@ -23,6 +23,7 @@ export const SEEDPODS_COOKIE_TOKEN_REGEXP = /^[!#$%&'*+\-.^`|~\w]+$/
 export const SEEDPODS_COOKIE_TYPES = ['aes-gcm', 'hmac'] as const
 export const SEEDPODS_ERROR_TYPES = [
   'CookieExpected',
+  'CookieKeyAlreadyExists',
   'CookieOptionMissing',
   'CookieOptionTypeInvalid',
   'CookieOptionUnknown',
@@ -30,6 +31,7 @@ export const SEEDPODS_ERROR_TYPES = [
   'CookieOptionsExpectedObject',
   'CookiePrefixConfigurationInvalid',
   'JarExpected',
+  'UnknownCookieKey',
 ] as const
 
 export const SEEDPODS_COOKIE_STATE_PRIORITY_ORDER = [

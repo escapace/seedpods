@@ -60,4 +60,16 @@ describe('hmac', () => {
       assert.equal(await from(value, [keyB]), undefined)
     }
   })
+
+  it('rejects inputs whose payload recomputes to an empty signed value', async () => {
+    const kid = Buffer.from(keyA.id).toString('base64url')
+
+    assert.equal(await from(`${kid}..signature`, [keyA]), undefined)
+  })
+
+  it('rejects inputs whose signed length differs from the recomputed value', async () => {
+    const signedCookie = await to(Buffer.from('hello'), [keyA])
+
+    assert.equal(await from(`${signedCookie!}x`, [keyA]), undefined)
+  })
 })

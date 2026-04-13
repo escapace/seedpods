@@ -4,6 +4,8 @@ function formatCause(cause: SeedpodsErrorCause): string {
   switch (cause.type) {
     case 'CookieExpected':
       return 'Expected a cookie.'
+    case 'CookieKeyAlreadyExists':
+      return `Cookie key "${cause.key}" already exists in the jar.`
     case 'CookieOptionMissing':
       return `Cookie option "${cause.option}" is required.`
     case 'CookieOptionsExpectedObject':
@@ -18,6 +20,8 @@ function formatCause(cause: SeedpodsErrorCause): string {
       return `Cookies with the "${cause.prefix}" prefix ${cause.reason}.`
     case 'JarExpected':
       return 'Expected a cookie jar.'
+    case 'UnknownCookieKey':
+      return `Unknown cookie key "${cause.key}".`
   }
 }
 
