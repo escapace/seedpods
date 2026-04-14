@@ -7,37 +7,40 @@ export {
   SEEDPODS_SYMBOL_COOKIE,
   SEEDPODS_SYMBOL_JAR,
 } from './constants'
+export { assertCookie, createCookie } from './create-cookie'
+export { assertJar, createJar } from './create-jar'
 export {
-  SeedpodsError,
   getSeedpodsErrorCausesByType,
   isSeedpodsError,
   isSeedpodsErrorOfType,
+  SeedpodsError,
 } from './error'
-export { createCookie, assertCookie } from './create-cookie'
-export { createJar, assertJar } from './create-jar'
-export { useCookies } from './use-cookies'
-export { deriveKey } from './utilities/derive-key'
-export { parseCookieHeader } from './utilities/parse-cookie-header'
+export { patchCookie } from './patch-cookie'
 export type {
-  SeedpodsCookie,
   SeedpodsConfiguredKey,
+  SeedpodsCookie,
   SeedpodsCookieHeader,
-  SeedpodsCookieStateType,
   SeedpodsCookieKey,
   SeedpodsCookieOptions,
   SeedpodsCookieOptionsBase,
   SeedpodsCookieOptionsForType,
   SeedpodsCookiePrefix,
+  SeedpodsCookiePublishedSnapshot,
+  SeedpodsCookieRuntimeDraft,
+  SeedpodsCookieRuntimeOptions,
   SeedpodsCookies,
+  SeedpodsCookieSameSite,
   SeedpodsCookiesReducer,
   SeedpodsCookiesReducers,
-  SeedpodsCookieSameSite,
   SeedpodsCookieState,
   SeedpodsCookieStateExpired,
   SeedpodsCookieStateIndecipherable,
   SeedpodsCookieStateNeedsUpdate,
   SeedpodsCookieStateSet,
+  SeedpodsCookieStateType,
   SeedpodsCookieStateUnset,
+  SeedpodsCookieStaticInputOptions,
+  SeedpodsCookiesWithCookie,
   SeedpodsCookieType,
   SeedpodsCookieValue,
   SeedpodsCookieValueOptions,
@@ -48,9 +51,9 @@ export type {
   SeedpodsErrorType,
   SeedpodsJar,
   SeedpodsJarAction,
-  SeedpodsJarActionType,
   SeedpodsJarActionBase,
   SeedpodsJarActionPayload,
+  SeedpodsJarActionType,
   SeedpodsJarBuilder,
   SeedpodsJarCombineAction,
   SeedpodsJarCookieAction,
@@ -62,12 +65,14 @@ export type {
   SeedpodsJarState,
   SeedpodsJarStateAfterAction,
   SeedpodsMergedJarCookies,
-  SeedpodsCookiesWithCookie,
-  SeedpodsReplaceProperties,
   SeedpodsParsedCookieOptions,
   SeedpodsParsedCookieOptionsBase,
   SeedpodsParsedCookieOptionsForType,
   SeedpodsParsedEncryptedCookieOptions,
   SeedpodsParsedSignedCookieOptions,
+  SeedpodsReplaceProperties,
   SeedpodsSignedCookieOptions,
 } from './types'
+export { useCookies } from './use-cookies'
+export { deriveKey } from './utilities/derive-key'
+export { parseCookieHeader } from './utilities/parse-cookie-header'

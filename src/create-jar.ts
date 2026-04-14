@@ -35,7 +35,7 @@ const applyJarAction = (state: SeedpodsJarState, action: SeedpodsJarAction): See
 
       assertCookie(cookie)
 
-      const key = cookie[SEEDPODS_SYMBOL_COOKIE].options.key
+      const key = cookie[SEEDPODS_SYMBOL_COOKIE].key
 
       if (Object.keys(state.cookies).includes(key)) {
         throw new SeedpodsError([

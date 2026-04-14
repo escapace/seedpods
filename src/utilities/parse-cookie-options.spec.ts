@@ -3,7 +3,7 @@ import { SeedpodsError, getSeedpodsErrorCausesByType } from '../error'
 import type { SeedpodsErrorCause } from '../types'
 import { utf8ToBytes } from './bytes'
 import { parseCookieOptions, parseCookieValue } from './parse-cookie-options'
-import { policyFingerprint } from './policy-fingerprint'
+import { canonicalizePolicy } from './canonicalize-policy'
 
 const aesKey = new Uint8Array(32).fill(1)
 const hmacKey = utf8ToBytes('hmac-key')
@@ -747,7 +747,7 @@ describe('parse-cookie-options', () => {
     assert.isUndefined(parseCookieValue({ options: { key: 'session', policy: 1 }, value: true }))
   })
 
-  it('treats omitted and false boolean transport flags as the same policy', async () => {
+  it('treats omitted and false boolean transport flags as the same policy', () => {
     const omitted = parseCookieOptions({
       key: 'session',
       keys: [hmacConfiguredKey],
@@ -765,10 +765,10 @@ describe('parse-cookie-options', () => {
       type: 'hmac',
     })
 
-    assert.equal(await policyFingerprint(omitted), await policyFingerprint(explicitFalse))
+    assert.equal(canonicalizePolicy(omitted), canonicalizePolicy(explicitFalse))
   })
 
-  it('changes the policy fingerprint when rewrite-safe transport attributes change', async () => {
+  it('changes the policy fingerprint when rewrite-safe transport attributes change', () => {
     const base = parseCookieOptions({
       key: 'session',
       keys: [hmacConfiguredKey],
@@ -811,14 +811,14 @@ describe('parse-cookie-options', () => {
       type: 'hmac',
     })
 
-    assert.notEqual(await policyFingerprint(base), await policyFingerprint(secure))
-    assert.notEqual(await policyFingerprint(base), await policyFingerprint(httpOnly))
-    assert.notEqual(await policyFingerprint(base), await policyFingerprint(sameSite))
-    assert.notEqual(await policyFingerprint(base), await policyFingerprint(maxAge))
-    assert.notEqual(await policyFingerprint(base), await policyFingerprint(partitioned))
+    assert.notEqual(canonicalizePolicy(base), canonicalizePolicy(secure))
+    assert.notEqual(canonicalizePolicy(base), canonicalizePolicy(httpOnly))
+    assert.notEqual(canonicalizePolicy(base), canonicalizePolicy(sameSite))
+    assert.notEqual(canonicalizePolicy(base), canonicalizePolicy(maxAge))
+    assert.notEqual(canonicalizePolicy(base), canonicalizePolicy(partitioned))
   })
 
-  it('does not include cookie identity and scope fields in the policy fingerprint', async () => {
+  it('does not include cookie identity and scope fields in the policy fingerprint', () => {
     const base = parseCookieOptions({
       key: 'session',
       keys: [hmacConfiguredKey],
@@ -843,8 +843,8 @@ describe('parse-cookie-options', () => {
       type: 'hmac',
     })
 
-    assert.equal(await policyFingerprint(base), await policyFingerprint(renamed))
-    assert.equal(await policyFingerprint(base), await policyFingerprint(scoped))
+    assert.equal(canonicalizePolicy(base), canonicalizePolicy(renamed))
+    assert.equal(canonicalizePolicy(base), canonicalizePolicy(scoped))
   })
 
   it('aggregates multiple validation causes in one error', () => {

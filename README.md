@@ -1,6 +1,6 @@
 # seedpods
 
-Define cookies once as named values in application code, choose signing or encryption, provide multiple keys for rotation, and set transport attributes such as path, domain, SameSite, HttpOnly, Secure, Partitioned, and Max-Age. The library reads them from the incoming `Cookie` header, returns a typed cookie interface for getting, setting, refreshing, and deleting values, and emits only the changed `Set-Cookie` headers for the response. Cookie definitions can be grouped into reusable jars and combined across modules.
+Define cookies once as named values in application code, choose signing or encryption, provide multiple keys for rotation, and set transport attributes such as path, domain, SameSite, HttpOnly, Secure, Partitioned, and Max-Age. The library reads them from the incoming `Cookie` header, returns a typed cookie interface for getting, setting, refreshing, and deleting values, and emits only the changed `Set-Cookie` headers for the response. Existing cookie definitions support runtime updates for keys, Max-Age, HttpOnly, SameSite, Secure, and Partitioned without restarting the process. Cookie definitions can be grouped into reusable jars and combined across modules.
 
 ## Install
 
@@ -13,7 +13,7 @@ pnpm add seedpods
 A typical request and response flow has four parts: derive or load keys, assign stable identifiers to them, define cookies, and open the resulting jars for each request.
 
 ```ts
-import { createCookie, createJar, deriveKey, useCookies } from 'seedpods'
+import { createCookie, createJar, deriveKey, patchCookie, useCookies } from 'seedpods'
 
 // Derive or load keys once at startup.
 const currentSessionKey = await deriveKey(process.env.SESSION_SECRET!, { salt: 'session' })
@@ -90,7 +90,17 @@ export async function handleRequest(request: Request) {
 
 `useCookies()` returns only the changed `Set-Cookie` values through `values()`. Use `entries()` when the cookie key is also needed.
 
-Call `refresh(key)` to rewrite the current cookie value without changing its logical value. This is useful for sliding sessions and other renewal flows that need to extend browser-managed lifetime attributes such as `Max-Age` or `Expires`.
+Runtime cookie settings can be updated on an existing cookie definition without recreating jars or restarting the process.
+
+```ts
+patchCookie(sessionCookie, (draft) => {
+  draft.keys = [nextSessionKeyEntry, currentSessionKeyEntry, previousSessionKeyEntry]
+  draft.sameSite = 'Strict'
+  draft.maxAge = 60 * 60 * 24 * 14
+})
+```
+
+The call updates later requests immediately. Existing `useCookies()` instances keep the request-local configuration they already captured.
 
 ### Behavior notes
 
@@ -102,11 +112,11 @@ Call `refresh(key)` to rewrite the current cookie value without changing its log
 - `partitioned: true` requires `secure: true`. Browsers enforce partitioned storage semantics; seedpods only emits the `Partitioned` attribute.
 - Reading a cookie with a non-primary configured key causes the next output to rewrite it with the first configured key. Reading a cookie whose transport policy differs from the current definition rewrites it with the current `maxAge`, `sameSite`, `httpOnly`, `secure`, and `partitioned` attributes. Some rewrites take effect only when the user agent accepts the `Set-Cookie` header for that response. Under [`rfc6265bis`](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html), `SameSite=Lax` and `SameSite=Strict` cookies are not set in responses to cross-site subresource requests or cross-site nested navigations. Changes to `name`, `prefix`, `domain`, and `path` are not migrated automatically.
 - If a configured cookie cannot be verified or decoded, `get()` returns `undefined` and the next output expires it.
-- `values()` and `entries()` emit only changes. Deleting an already unset cookie records no new change, and unchanged values do not produce a `Set-Cookie` header unless `refresh()` is called explicitly.
+- `values()` and `entries()` emit only changes. Deleting an already unset cookie records no new change, and unchanged values do not produce a `Set-Cookie` header unless `refresh()` is called explicitly. Use `refresh(key)` for sliding sessions and other flows that need to rewrite the current value to extend browser-managed lifetime such as `Max-Age`.
 
 # API
 
-## function assertCookie [↗](src/create-cookie.ts#L160-L174 'assertCookie')
+## function assertCookie [↗](src/create-cookie.ts#L237-L251 'assertCookie')
 
 Asserts that a value was created by [createCookie](#function-createcookie-).
 
@@ -144,7 +154,7 @@ export declare function assertJar(value: unknown): asserts value is SeedpodsJarI
 
 [SeedpodsError](#class-seedpodserror-) When the value is not a cookie jar created by this package.
 
-## function createCookie [↗](src/create-cookie.ts#L73-L152 'createCookie')
+## function createCookie [↗](src/create-cookie.ts#L113-L229 'createCookie')
 
 Creates a cookie definition for one application value.
 
@@ -270,7 +280,43 @@ export declare function isSeedpodsErrorOfType<T extends SeedpodsErrorType>(
 
 `true` when the error contains at least one matching cause; otherwise, `false`.
 
-## function useCookies [↗](src/use-cookies.ts#L106-L236 'useCookies')
+## function patchCookie [↗](src/patch-cookie.ts#L41-L64 'patchCookie')
+
+Updates the hot-patchable runtime fields of an existing cookie definition.
+
+```typescript
+patchCookie: <T extends string, U extends SeedpodsCookieType, V>(cookie: SeedpodsCookie<T, U, V>,
+  recipe: (draft: SeedpodsCookieRuntimeDraft) => void) => void
+```
+
+### Type Parameters
+
+| Parameter | Description                                                              |
+| --------- | ------------------------------------------------------------------------ |
+| `T`       | Application key used to address the cookie through the cookie interface. |
+| `U`       | Cookie protection mode.                                                  |
+| `V`       | Application value stored in the cookie.                                  |
+
+### Parameters
+
+| Parameter | Type                                                                                         | Description                                                                                       |
+| --------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `cookie`  | <pre>[SeedpodsCookie](#interface-seedpodscookie- 'interface SeedpodsCookie')\<T, U, V></pre> | Cookie definition created by [createCookie](#function-createcookie-).                             |
+| `recipe`  | <pre>(draft: SeedpodsCookieRuntimeDraft) => void</pre>                                       | Callback that mutates the runtime draft before the next configuration is validated and committed. |
+
+### Throws
+
+[SeedpodsError](#class-seedpodserror-) When `cookie` was not created by this package or when the patched runtime options are invalid.
+
+### Remarks
+
+This function can rotate configured keys and update `maxAge`, `httpOnly`, `sameSite`, `secure`, and `partitioned` without recreating the cookie definition. It does not change cookie identity or browser scope fields such as `key`, `type`, `name`, `prefix`, `domain`, or `path`.
+
+The update is committed before the function returns. Later requests observe the new runtime immediately. Existing [useCookies](#function-usecookies-) instances keep the request-local configuration they captured when they were created.
+
+Scope follows the cookie object returned by [createCookie](#function-createcookie-). When the same cookie object is reused across multiple jars, one call updates all jars that reference it. When validation fails, the function throws and leaves the previous runtime unchanged.
+
+## function useCookies [↗](src/use-cookies.ts#L114-L255 'useCookies')
 
 Creates a cookie interface from a `Cookie` header value and a cookie jar.
 
@@ -409,7 +455,7 @@ Raw key bytes.
 value: Uint8Array
 ```
 
-## interface SeedpodsCookie [↗](src/types.ts#L286-L296 'SeedpodsCookie')
+## interface SeedpodsCookie [↗](src/types.ts#L313-L334 'SeedpodsCookie')
 
 Cookie definition returned by [createCookie](#function-createcookie-).
 
@@ -531,7 +577,7 @@ Whether the cookie requires a secure transport.
 secure?: boolean;
 ```
 
-## interface SeedpodsCookies [↗](src/types.ts#L457-L495 'SeedpodsCookies')
+## interface SeedpodsCookies [↗](src/types.ts#L495-L533 'SeedpodsCookies')
 
 Mutable cookie interface returned by [useCookies](#function-usecookies-).
 
@@ -584,7 +630,7 @@ refresh: (key: SeedpodsJarKeys<SeedpodsJarType>) => void;
 
 #### Remarks
 
-This is useful for renewing browser-managed attributes such as `Max-Age` or `Expires` when the logical value stays the same.
+This is useful for renewing browser-managed lifetime such as `Max-Age` when the logical value stays the same.
 
 ### SeedpodsCookies.set
 
@@ -603,7 +649,7 @@ Returns changed `Set-Cookie` header values.
 values: () => Promise<string[]>
 ```
 
-## interface SeedpodsDeriveKeyOptions [↗](src/types.ts#L500-L518 'SeedpodsDeriveKeyOptions')
+## interface SeedpodsDeriveKeyOptions [↗](src/types.ts#L538-L556 'SeedpodsDeriveKeyOptions')
 
 Options for [deriveKey](#function-derivekey-).
 
@@ -674,7 +720,7 @@ Encryption mode.
 type: 'aes-gcm'
 ```
 
-## interface SeedpodsErrorMetadata [↗](src/types.ts#L218-L229 'SeedpodsErrorMetadata')
+## interface SeedpodsErrorMetadata [↗](src/types.ts#L245-L256 'SeedpodsErrorMetadata')
 
 Structured data carried by each [SeedpodsError](#class-seedpodserror-) cause type.
 
@@ -682,7 +728,7 @@ Structured data carried by each [SeedpodsError](#class-seedpodserror-) cause typ
 export interface SeedpodsErrorMetadata
 ```
 
-## interface SeedpodsJar [↗](src/types.ts#L399-L421 'SeedpodsJar')
+## interface SeedpodsJar [↗](src/types.ts#L437-L459 'SeedpodsJar')
 
 Cookie jar returned by [createJar](#function-createjar-).
 
@@ -761,7 +807,7 @@ Signing mode.
 type: 'hmac'
 ```
 
-## type SeedpodsCookieHeader [↗](src/types.ts#L426 'SeedpodsCookieHeader')
+## type SeedpodsCookieHeader [↗](src/types.ts#L464 'SeedpodsCookieHeader')
 
 Raw `Cookie` header value accepted by [useCookies](#function-usecookies-).
 
@@ -805,7 +851,7 @@ Supported `SameSite` attribute values for cookie definitions.
 export type SeedpodsCookieSameSite = (typeof SEEDPODS_COOKIE_SAME_SITE_VALUES)[number]
 ```
 
-## type SeedpodsCookiesReducer [↗](src/types.ts#L433-L436 'SeedpodsCookiesReducer')
+## type SeedpodsCookiesReducer [↗](src/types.ts#L471-L474 'SeedpodsCookiesReducer')
 
 Reducer used to combine the current and next value for one cookie key.
 
@@ -822,7 +868,7 @@ export type SeedpodsCookiesReducer<SeedpodsValue> = (
 | --------------- | ------------------ |
 | `SeedpodsValue` | Cookie value type. |
 
-## type SeedpodsCookiesReducers [↗](src/types.ts#L443-L447 'SeedpodsCookiesReducers')
+## type SeedpodsCookiesReducers [↗](src/types.ts#L481-L485 'SeedpodsCookiesReducers')
 
 Reducer map accepted by [useCookies](#function-usecookies-).
 
@@ -852,7 +898,7 @@ export type SeedpodsCookieType = (typeof SEEDPODS_COOKIE_TYPES)[number]
 
 `'aes-gcm'` encrypts and authenticates the cookie value. `'hmac'` signs the value without encrypting it.
 
-## type SeedpodsErrorCause [↗](src/types.ts#L236-L237 'SeedpodsErrorCause')
+## type SeedpodsErrorCause [↗](src/types.ts#L263-L264 'SeedpodsErrorCause')
 
 Machine-readable error detail carried by [SeedpodsError](#class-seedpodserror-).
 

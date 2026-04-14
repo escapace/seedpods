@@ -10,7 +10,8 @@ import { utf8ToBytes } from './utilities/bytes'
 import { deriveKey } from './utilities/derive-key'
 import { encode } from './utilities/encode'
 import { encodeKid } from './utilities/encode-kid'
-import { policyFingerprint } from './utilities/policy-fingerprint'
+import { canonicalizePolicy } from './utilities/canonicalize-policy'
+import { fingerprintPolicy } from './utilities/fingerprint-policy'
 
 const keyA = await deriveKey('key-a', { iterations: 1 })
 const keyB = await deriveKey('key-b', { iterations: 1 })
@@ -99,7 +100,11 @@ const malformedHmacCookieValues = [
   'AA.BB.CC',
 ]
 const encodeWithPolicy = async (value: unknown, options: Parameters<typeof encode>[1]) =>
-  encode(value, options, await policyFingerprint(options))
+  encode(value, options, await fingerprintPolicy(canonicalizePolicy(options)))
+
+const currentOptions = <T extends string, U extends import('./types').SeedpodsCookieType, V>(
+  cookie: import('./types').SeedpodsCookie<T, U, V>,
+) => cookie[SEEDPODS_SYMBOL_COOKIE].readSnapshot().options
 
 describe('createCookie', () => {
   it('treats undecodable payloads as indecipherable', async () => {
@@ -247,8 +252,8 @@ describe('useCookies', () => {
 
   it('prefers valid hmac cookies when duplicates include malformed values', async () => {
     const validValue = await toHmac(
-      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
-      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+      (await encodeWithPolicy(100, currentOptions(dazzle)))!,
+      currentOptions(dazzle).keys,
     )
 
     for (const cookieHeader of [
@@ -264,8 +269,8 @@ describe('useCookies', () => {
 
   it('expires cookies whose key identifier is unknown', async () => {
     const validValue = await toHmac(
-      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
-      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+      (await encodeWithPolicy(100, currentOptions(dazzle)))!,
+      currentOptions(dazzle).keys,
     )
     const [, payload, signature] = validValue!.split('.')
     const unknownIdentifier = encodeKid('missing-key')
@@ -281,10 +286,9 @@ describe('useCookies', () => {
   })
 
   it('expires cookies whose key identifier points to the wrong configured key', async () => {
-    const validValue = await toHmac(
-      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
-      [configuredKeyC],
-    )
+    const validValue = await toHmac((await encodeWithPolicy(100, currentOptions(dazzle)))!, [
+      configuredKeyC,
+    ])
     const [, payload, signature] = validValue!.split('.')
     const wrongIdentifier = encodeKid(configuredKeyB.id)
     const cookies = await useCookies(
@@ -300,8 +304,8 @@ describe('useCookies', () => {
 
   it('refreshes an unchanged cookie when asked explicitly', async () => {
     const header = `dazzle=${(await toHmac(
-      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
-      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+      (await encodeWithPolicy(100, currentOptions(dazzle)))!,
+      currentOptions(dazzle).keys,
     ))!}`
 
     const cookies = await useCookies(header, childSeedpodsJar)
@@ -322,8 +326,8 @@ describe('useCookies', () => {
 
   it('lets refresh force a rewrite after set receives the same logical value', async () => {
     const header = `dazzle=${(await toHmac(
-      (await encodeWithPolicy(100, dazzle[SEEDPODS_SYMBOL_COOKIE].options))!,
-      dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
+      (await encodeWithPolicy(100, currentOptions(dazzle)))!,
+      currentOptions(dazzle).keys,
     ))!}`
 
     const cookies = await useCookies(header, childSeedpodsJar)
@@ -366,8 +370,8 @@ describe('useCookies', () => {
     })
 
     const header = `dazzle=${(await toHmac(
-      (await encodeWithPolicy(100, previous[SEEDPODS_SYMBOL_COOKIE].options))!,
-      previous[SEEDPODS_SYMBOL_COOKIE].options.keys,
+      (await encodeWithPolicy(100, currentOptions(previous)))!,
+      currentOptions(previous).keys,
     ))!}`
 
     const cookies = await useCookies(header, createJar().put(current))
@@ -400,8 +404,8 @@ describe('useCookies', () => {
     })
 
     const header = `crumb=${(await toHmac(
-      (await encodeWithPolicy('value', previous[SEEDPODS_SYMBOL_COOKIE].options))!,
-      previous[SEEDPODS_SYMBOL_COOKIE].options.keys,
+      (await encodeWithPolicy('value', currentOptions(previous)))!,
+      currentOptions(previous).keys,
     ))!}`
 
     const cookies = await useCookies(header, createJar().put(current))
@@ -433,8 +437,8 @@ describe('useCookies', () => {
     })
 
     const header = `crumb=${(await toHmac(
-      (await encodeWithPolicy('value', previous[SEEDPODS_SYMBOL_COOKIE].options))!,
-      previous[SEEDPODS_SYMBOL_COOKIE].options.keys,
+      (await encodeWithPolicy('value', currentOptions(previous)))!,
+      currentOptions(previous).keys,
     ))!}`
 
     const cookies = await useCookies(header, createJar().put(current))
@@ -449,16 +453,10 @@ describe('useCookies', () => {
 
   it('reads, merges, writes, and deletes cookie values', async () => {
     const cookieHeader = `__Secure-vixen=${(await toAesGcm(
-      (await encodeWithPolicy(
-        { author: 'escape', change: 'triangle' },
-        vixen[SEEDPODS_SYMBOL_COOKIE].options,
-      ))!,
+      (await encodeWithPolicy({ author: 'escape', change: 'triangle' }, currentOptions(vixen)))!,
       [configuredKeyC],
     ))!}; tycho=${(await toAesGcm(
-      (await encodeWithPolicy(
-        ['threw', 'satellites', 'class'],
-        tycho[SEEDPODS_SYMBOL_COOKIE].options,
-      ))!,
+      (await encodeWithPolicy(['threw', 'satellites', 'class'], currentOptions(tycho)))!,
       [configuredKeyB, configuredKeyA],
     ))!}; __Host-ball=${encodeKid('ride problem cause market')}; abc=qwe`
 
@@ -608,10 +606,7 @@ describe('useCookies', () => {
 
   it('keeps state intact when a reducer throws', async () => {
     const tychoHeader = `tycho=${(await toAesGcm(
-      (await encodeWithPolicy(
-        ['threw', 'satellites', 'class'],
-        tycho[SEEDPODS_SYMBOL_COOKIE].options,
-      ))!,
+      (await encodeWithPolicy(['threw', 'satellites', 'class'], currentOptions(tycho)))!,
       [configuredKeyB, configuredKeyA],
     ))!}`
     let reducerShouldThrow = true
@@ -647,19 +642,16 @@ describe('useCookies', () => {
 
     const cookieHeader = [
       `__Secure-vixen=${(await toAesGcm(
-        (await encodeWithPolicy({ key: 'vixen' }, vixen[SEEDPODS_SYMBOL_COOKIE].options))!,
+        (await encodeWithPolicy({ key: 'vixen' }, currentOptions(vixen)))!,
         [configuredKeyC],
       ))!}`,
       'qweqweqwe=123',
       `__Secure-vixen=${(await toAesGcm(
-        (await encodeWithPolicy({ key: 'vixenTwo' }, vixenTwo[SEEDPODS_SYMBOL_COOKIE].options))!,
+        (await encodeWithPolicy({ key: 'vixenTwo' }, currentOptions(vixenTwo)))!,
         [configuredKeyB],
       ))!}`,
       `__Secure-vixen=${(await toAesGcm(
-        (await encodeWithPolicy(
-          { key: 'vixenThree' },
-          vixenThree[SEEDPODS_SYMBOL_COOKIE].options,
-        ))!,
+        (await encodeWithPolicy({ key: 'vixenThree' }, currentOptions(vixenThree)))!,
         [configuredKeyC],
       ))!}`,
     ].join('; ')
@@ -701,13 +693,16 @@ describe('useCookies', () => {
     const countedCookies = [one, two, three].map((cookie) => {
       let calls = 0
       const metadata = cookie[SEEDPODS_SYMBOL_COOKIE] as {
-        fromString: (value: string | undefined) => Promise<SeedpodsCookieState>
+        fromStringWithSnapshot: (
+          snapshot: unknown,
+          value: string | undefined,
+        ) => Promise<SeedpodsCookieState>
       }
-      const originalFromString = metadata.fromString
+      const originalFromStringWithSnapshot = metadata.fromStringWithSnapshot
 
-      metadata.fromString = async (value) => {
+      metadata.fromStringWithSnapshot = async (snapshot, value) => {
         calls += 1
-        return await originalFromString(value)
+        return await originalFromStringWithSnapshot(snapshot, value)
       }
 
       return {
@@ -717,7 +712,7 @@ describe('useCookies', () => {
     })
 
     const header = `shared=${(await toAesGcm(
-      (await encodeWithPolicy({ key: 'two' }, two[SEEDPODS_SYMBOL_COOKIE].options))!,
+      (await encodeWithPolicy({ key: 'two' }, currentOptions(two)))!,
       [configuredKeyB],
     ))!}`
 

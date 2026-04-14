@@ -6,10 +6,13 @@ import {
 } from './constants'
 import { SeedpodsError } from './error'
 import type {
+  SeedpodsCookie,
   SeedpodsCookieHeader,
+  SeedpodsCookiePublishedSnapshot,
   SeedpodsCookies,
   SeedpodsCookiesReducers,
   SeedpodsCookieState,
+  SeedpodsCookieType,
   SeedpodsJarCookieValue,
   SeedpodsJarInterface,
   SeedpodsJarKeys,
@@ -18,6 +21,11 @@ import { SeedpodsCookieStateType } from './types'
 import { parseCookieHeader } from './utilities/parse-cookie-header'
 
 type CookieStateHistory = [SeedpodsCookieState, ...SeedpodsCookieState[]]
+
+interface RequestCookieContext {
+  snapshot: SeedpodsCookiePublishedSnapshot
+  states: CookieStateHistory
+}
 
 type CookieStateDeletion = Extract<
   SeedpodsCookieState,
@@ -73,14 +81,14 @@ const shouldEmitCookieState = (
   nextState.type !== SeedpodsCookieStateType.Set ||
   !deepEqual(getCookieStateValue(initialState), getCookieStateValue(nextState))
 
-const getCookieStates = (
-  state: Map<string, CookieStateHistory>,
+const getCookieContext = (
+  state: Map<string, RequestCookieContext>,
   key: string,
-): CookieStateHistory => {
-  const cookieStates = state.get(key)
+): RequestCookieContext => {
+  const cookieContext = state.get(key)
 
-  if (cookieStates !== undefined) {
-    return cookieStates
+  if (cookieContext !== undefined) {
+    return cookieContext
   }
 
   throw new SeedpodsError([
@@ -111,21 +119,26 @@ export const useCookies = async <SeedpodsJar extends SeedpodsJarInterface>(
   const cookies = jar[SEEDPODS_SYMBOL_JAR].state.cookies
   const parsedCookieHeader = parseCookieHeader(cookieHeader)
 
-  const state = new Map<string, CookieStateHistory>(
+  const cookieEntries = Object.entries(cookies) as Array<
+    [string, SeedpodsCookie<string, SeedpodsCookieType, unknown>]
+  >
+
+  const state = new Map<string, RequestCookieContext>(
     await Promise.all(
-      Object.entries(cookies).map(async ([key, cookie]): Promise<[string, CookieStateHistory]> => {
-        const name = cookie[SEEDPODS_SYMBOL_COOKIE].options.name
-        const parsedCookies = parsedCookieHeader.get(name)
+      cookieEntries.map(async ([key, cookie]): Promise<[string, RequestCookieContext]> => {
+        const snapshot = cookie[SEEDPODS_SYMBOL_COOKIE].readSnapshot()
+        const parsedCookies = parsedCookieHeader.get(snapshot.options.name)
         const candidateValues =
           parsedCookies === undefined || parsedCookies.length === 0 ? [undefined] : parsedCookies
 
         const cookieStates = await Promise.all(
           candidateValues.map(
-            async (parsedCookie) => await cookie[SEEDPODS_SYMBOL_COOKIE].fromString(parsedCookie),
+            async (parsedCookie) =>
+              await cookie[SEEDPODS_SYMBOL_COOKIE].fromStringWithSnapshot(snapshot, parsedCookie),
           ),
         )
 
-        return [key, [getInitialCookieState(cookieStates)]]
+        return [key, { snapshot, states: [getInitialCookieState(cookieStates)] }]
       }),
     ),
   )
@@ -133,8 +146,8 @@ export const useCookies = async <SeedpodsJar extends SeedpodsJarInterface>(
   const get = <SeedpodsKey extends SeedpodsJarKeys<SeedpodsJar>>(
     key: SeedpodsKey,
   ): SeedpodsJarCookieValue<SeedpodsJar, SeedpodsKey> | undefined => {
-    const cookieStates = getCookieStates(state, key)
-    const lastCookieState = getLastCookieState(cookieStates)
+    const cookieContext = getCookieContext(state, key)
+    const lastCookieState = getLastCookieState(cookieContext.states)
 
     if (isCookieStateSet(lastCookieState)) {
       return lastCookieState.value as SeedpodsJarCookieValue<SeedpodsJar, SeedpodsKey>
@@ -144,13 +157,16 @@ export const useCookies = async <SeedpodsJar extends SeedpodsJarInterface>(
   }
 
   const del = (key: SeedpodsJarKeys<SeedpodsJar>) => {
-    const cookieStates = getCookieStates(state, key)
-    const firstCookieState = cookieStates[0]
-    const lastCookieState = getLastCookieState(cookieStates)
+    const cookieContext = getCookieContext(state, key)
+    const firstCookieState = cookieContext.states[0]
+    const lastCookieState = getLastCookieState(cookieContext.states)
     const nextState = getDeletionCookieState(firstCookieState)
 
     if (lastCookieState.type !== nextState.type) {
-      state.set(key, appendCookieState(cookieStates, nextState))
+      state.set(key, {
+        ...cookieContext,
+        states: appendCookieState(cookieContext.states, nextState),
+      })
     }
   }
 
@@ -158,8 +174,8 @@ export const useCookies = async <SeedpodsJar extends SeedpodsJarInterface>(
     key: SeedpodsKey,
     value: SeedpodsJarCookieValue<SeedpodsJar, SeedpodsKey> | undefined,
   ): void => {
-    const cookieStates = getCookieStates(state, key)
-    const lastCookieState = getLastCookieState(cookieStates)
+    const cookieContext = getCookieContext(state, key)
+    const lastCookieState = getLastCookieState(cookieContext.states)
     const lastCookieValue = getCookieStateValue(lastCookieState) as SeedpodsJarCookieValue<
       SeedpodsJar,
       SeedpodsKey
@@ -172,15 +188,18 @@ export const useCookies = async <SeedpodsJar extends SeedpodsJarInterface>(
       return del(key)
     }
 
-    state.set(
-      key,
-      appendCookieState(cookieStates, { type: SeedpodsCookieStateType.Set, value: nextValue }),
-    )
+    state.set(key, {
+      ...cookieContext,
+      states: appendCookieState(cookieContext.states, {
+        type: SeedpodsCookieStateType.Set,
+        value: nextValue,
+      }),
+    })
   }
 
   const refresh = (key: SeedpodsJarKeys<SeedpodsJar>) => {
-    const cookieStates = getCookieStates(state, key)
-    const lastCookieState = getLastCookieState(cookieStates)
+    const cookieContext = getCookieContext(state, key)
+    const lastCookieState = getLastCookieState(cookieContext.states)
 
     if (!isCookieStateSet(lastCookieState)) {
       return
@@ -190,30 +209,30 @@ export const useCookies = async <SeedpodsJar extends SeedpodsJarInterface>(
       return
     }
 
-    state.set(
-      key,
-      appendCookieState(cookieStates, {
+    state.set(key, {
+      ...cookieContext,
+      states: appendCookieState(cookieContext.states, {
         type: SeedpodsCookieStateType.SetButNeedsUpdate,
         value: lastCookieState.value,
       }),
-    )
+    })
   }
 
   const entries = async (): Promise<Array<[SeedpodsJarKeys<SeedpodsJar>, string]>> => {
     const promises: Array<Promise<[SeedpodsJarKeys<SeedpodsJar>, string] | undefined>> = []
 
-    for (const [key, cookieStates] of state) {
-      const cookie = cookies[key][SEEDPODS_SYMBOL_COOKIE]
-      const firstCookieState = cookieStates[0]
-      const lastCookieState = getLastCookieState(cookieStates)
+    for (const [key, cookieContext] of state) {
+      const firstCookieState = cookieContext.states[0]
+      const lastCookieState = getLastCookieState(cookieContext.states)
 
       if (shouldEmitCookieState(firstCookieState, lastCookieState)) {
         promises.push(
-          cookie
-            .toString(lastCookieState)
-            .then((value): [SeedpodsJarKeys<SeedpodsJar>, string] | undefined =>
+          (cookies[key] as SeedpodsCookie<string, SeedpodsCookieType, unknown>)[
+            SEEDPODS_SYMBOL_COOKIE
+          ].toStringWithSnapshot(cookieContext.snapshot, lastCookieState).then(
+            (value): [SeedpodsJarKeys<SeedpodsJar>, string] | undefined =>
               value === undefined ? undefined : [key as SeedpodsJarKeys<SeedpodsJar>, value],
-            ),
+          ),
         )
       }
     }

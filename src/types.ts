@@ -178,6 +178,17 @@ export type SeedpodsCookieOptions<SeedpodsCookieKey extends string = string> =
   | SeedpodsEncryptedCookieOptions<SeedpodsCookieKey>
   | SeedpodsSignedCookieOptions<SeedpodsCookieKey>
 
+export interface SeedpodsCookieRuntimeOptions {
+  keys: SeedpodsConfiguredKey[]
+  httpOnly?: boolean
+  maxAge?: number
+  partitioned?: boolean
+  sameSite?: SeedpodsCookieSameSite
+  secure?: boolean
+}
+
+export type SeedpodsCookieRuntimeDraft = SeedpodsCookieRuntimeOptions
+
 export interface SeedpodsParsedCookieOptionsBase<
   SeedpodsCookieKey extends string = string,
 > extends Omit<SeedpodsCookieOptionsBase<SeedpodsCookieKey>, 'name'> {
@@ -211,6 +222,22 @@ export type SeedpodsParsedCookieOptionsForType<
   SeedpodsCookieKey extends string = string,
   SeedpodsCookieKind extends SeedpodsCookieType = SeedpodsCookieType,
 > = Extract<SeedpodsParsedCookieOptions<SeedpodsCookieKey>, { type: SeedpodsCookieKind }>
+
+export type SeedpodsCookieStaticInputOptions<
+  SeedpodsCookieKey extends string = string,
+  SeedpodsCookieKind extends SeedpodsCookieType = SeedpodsCookieType,
+> = Omit<
+  SeedpodsCookieOptionsForType<SeedpodsCookieKey, SeedpodsCookieKind>,
+  keyof SeedpodsCookieRuntimeOptions
+>
+
+export interface SeedpodsCookiePublishedSnapshot<
+  SeedpodsCookieKey extends string = string,
+  SeedpodsCookieKind extends SeedpodsCookieType = SeedpodsCookieType,
+> {
+  options: SeedpodsParsedCookieOptionsForType<SeedpodsCookieKey, SeedpodsCookieKind>
+  policyCanonical: string
+}
 
 /**
  * Structured data carried by each {@link SeedpodsError} cause type.
@@ -289,9 +316,20 @@ export interface SeedpodsCookie<
   _V = any,
 > {
   readonly [SEEDPODS_SYMBOL_COOKIE]: {
-    readonly options: SeedpodsParsedCookieOptionsForType<T, U>
+    readonly key: T
+    readonly staticInputOptions: SeedpodsCookieStaticInputOptions<T, U>
     fromString: (value: string | undefined) => Promise<SeedpodsCookieState>
+    fromStringWithSnapshot: (
+      snapshot: SeedpodsCookiePublishedSnapshot<T, U>,
+      value: string | undefined,
+    ) => Promise<SeedpodsCookieState>
+    publishSnapshot: (snapshot: SeedpodsCookiePublishedSnapshot<T, U>) => void
+    readSnapshot: () => SeedpodsCookiePublishedSnapshot<T, U>
     toString: (value: SeedpodsCookieState) => Promise<string | undefined>
+    toStringWithSnapshot: (
+      snapshot: SeedpodsCookiePublishedSnapshot<T, U>,
+      value: SeedpodsCookieState,
+    ) => Promise<string | undefined>
   }
 }
 
@@ -476,7 +514,7 @@ export interface SeedpodsCookies<SeedpodsJarType extends SeedpodsJarInterface> {
    * Rewrites the current value for one cookie key without changing that value.
    *
    * @remarks
-   * This is useful for renewing browser-managed attributes such as `Max-Age` or `Expires` when the logical value stays the same.
+   * This is useful for renewing browser-managed lifetime such as `Max-Age` when the logical value stays the same.
    */
   refresh: (key: SeedpodsJarKeys<SeedpodsJarType>) => void
 
