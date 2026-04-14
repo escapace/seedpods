@@ -380,10 +380,10 @@ function validateCookieKeys(
       continue
     }
 
-    if (!Buffer.isBuffer(entry.value)) {
+    if (!(entry.value instanceof Uint8Array)) {
       causes.push({
         actual: entry.value,
-        expected: 'a Buffer',
+        expected: 'a Uint8Array',
         option: valueOption,
         type: 'CookieOptionTypeInvalid',
       })

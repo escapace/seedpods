@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util'
+import { bytesToBase64 } from './utilities/bytes'
 import { deriveKey } from './utilities/derive-key'
 
 const help = () =>
@@ -72,7 +73,7 @@ try {
 
   const key = await deriveKey(values.secret, { iterations, salt: values.salt })
 
-  console.log(key.toString('base64'))
+  console.log(bytesToBase64(key))
 } catch (_) {
   help()
   process.exit(1)

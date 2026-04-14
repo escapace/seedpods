@@ -13,8 +13,9 @@ describe('decode-kid', () => {
     assert.equal(decodeKid('!!!'), undefined)
   })
 
-  it('rejects malformed key identifier segments', () => {
-    assert.equal(decodeKid('abc+'), undefined)
-    assert.equal(decodeKid('YQ='), undefined)
+  it('rejects malformed or non-canonical key identifier segments', () => {
+    for (const value of ['abc+', 'YQ=', 'AQ+', 'AQ/', 'AQ\n', 'AA.BB', '-', '_']) {
+      assert.equal(decodeKid(value), undefined)
+    }
   })
 })

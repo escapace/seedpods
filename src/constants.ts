@@ -21,6 +21,9 @@ export const SEEDPODS_COOKIE_PREFIXES = ['__Secure-', '__Host-'] as const
 export const SEEDPODS_COOKIE_SAME_SITE_VALUES = ['Strict', 'Lax', 'None'] as const
 export const SEEDPODS_COOKIE_TOKEN_REGEXP = /^[!#$%&'*+\-.^`|~\w]+$/
 export const SEEDPODS_COOKIE_TYPES = ['aes-gcm', 'hmac'] as const
+export const SEEDPODS_HMAC_SHA_256_SIGNATURE_LENGTH = 32
+export const SEEDPODS_AES_GCM_AUTHENTICATION_TAG_LENGTH = 16
+export const SEEDPODS_AES_GCM_IV_LENGTH = 12
 export const SEEDPODS_ERROR_TYPES = [
   'CookieExpected',
   'CookieKeyAlreadyExists',

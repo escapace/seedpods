@@ -166,7 +166,7 @@ describe('README usage example', () => {
         outgoing.setHeader('set-cookie', setCookieValues)
       }
 
-      outgoing.end(Buffer.from(await response.arrayBuffer()))
+      outgoing.end(new Uint8Array(await response.arrayBuffer()))
     })()
   })
 

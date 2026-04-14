@@ -1,19 +1,21 @@
+import { base64UrlToBytesExact, bytesToUtf8 } from './bytes'
+
 export const decodeKid = (value: string): string | undefined => {
   if (value.length === 0) {
     return
   }
 
-  const buffer = Buffer.from(value, 'base64url')
+  const buffer = base64UrlToBytesExact(value)
 
-  if (buffer.length === 0) {
+  if (buffer === undefined || buffer.length === 0) {
     return
   }
 
-  const decoded = buffer.toString()
+  const decoded = bytesToUtf8(buffer)
 
   if (decoded.length === 0) {
     return
   }
 
-  return Buffer.from(decoded).toString('base64url') === value ? decoded : undefined
+  return decoded
 }

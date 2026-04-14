@@ -59,7 +59,7 @@ export interface SeedpodsConfiguredKey {
   /**
    * Raw key bytes.
    */
-  value: Buffer
+  value: Uint8Array
 }
 
 /**

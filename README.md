@@ -304,12 +304,12 @@ A cookie interface for reading values, recording changes, and generating changed
 
 The returned interface reads configured cookie values through `get`, records changes through `set`, `del`, and `refresh`, and produces changed `Set-Cookie` header values through `entries` and `values`. If the header contains the same cookie name more than once, the function keeps the best decodable value for each configured cookie.
 
-## function deriveKey [↗](src/utilities/derive-key.ts#L13-L47 'deriveKey')
+## function deriveKey [↗](src/utilities/derive-key.ts#L14-L43 'deriveKey')
 
 Derives a symmetric key from a secret string.
 
 ```typescript
-deriveKey: (secret: string, options?: SeedpodsDeriveKeyOptions) => Promise<Buffer>
+deriveKey: (secret: string, options?: SeedpodsDeriveKeyOptions) => Promise<Uint8Array>
 ```
 
 ### Parameters
@@ -406,7 +406,7 @@ id: string
 Raw key bytes.
 
 ```typescript
-value: Buffer
+value: Uint8Array
 ```
 
 ## interface SeedpodsCookie [↗](src/types.ts#L286-L296 'SeedpodsCookie')

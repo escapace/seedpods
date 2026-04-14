@@ -6,8 +6,10 @@ import { to as toHmac } from './cookie-type/hmac'
 import { assertJar, createJar, SEEDPODS_SYMBOL_JAR } from './create-jar'
 import { useCookies } from './use-cookies'
 import { type SeedpodsCookieState, SeedpodsCookieStateType } from './types'
+import { utf8ToBytes } from './utilities/bytes'
 import { deriveKey } from './utilities/derive-key'
 import { encode } from './utilities/encode'
+import { encodeKid } from './utilities/encode-kid'
 import { policyFingerprint } from './utilities/policy-fingerprint'
 
 const keyA = await deriveKey('key-a', { iterations: 1 })
@@ -101,7 +103,7 @@ const encodeWithPolicy = async (value: unknown, options: Parameters<typeof encod
 
 describe('createCookie', () => {
   it('treats undecodable payloads as indecipherable', async () => {
-    const cookieValue = await toHmac(Buffer.from('not-json'), [configuredKeyC, configuredKeyB])
+    const cookieValue = await toHmac(utf8ToBytes('not-json'), [configuredKeyC, configuredKeyB])
 
     const state = await dazzle[SEEDPODS_SYMBOL_COOKIE].fromString(cookieValue)
 
@@ -266,7 +268,7 @@ describe('useCookies', () => {
       dazzle[SEEDPODS_SYMBOL_COOKIE].options.keys,
     )
     const [, payload, signature] = validValue!.split('.')
-    const unknownIdentifier = Buffer.from('missing-key').toString('base64url')
+    const unknownIdentifier = encodeKid('missing-key')
     const cookies = await useCookies(
       `dazzle=${unknownIdentifier}.${payload}.${signature}`,
       childSeedpodsJar,
@@ -284,7 +286,7 @@ describe('useCookies', () => {
       [configuredKeyC],
     )
     const [, payload, signature] = validValue!.split('.')
-    const wrongIdentifier = Buffer.from(configuredKeyB.id).toString('base64url')
+    const wrongIdentifier = encodeKid(configuredKeyB.id)
     const cookies = await useCookies(
       `dazzle=${wrongIdentifier}.${payload}.${signature}`,
       childSeedpodsJar,
@@ -458,7 +460,7 @@ describe('useCookies', () => {
         tycho[SEEDPODS_SYMBOL_COOKIE].options,
       ))!,
       [configuredKeyB, configuredKeyA],
-    ))!}; __Host-ball=${Buffer.from('ride problem cause market').toString('base64url')}; abc=qwe`
+    ))!}; __Host-ball=${encodeKid('ride problem cause market')}; abc=qwe`
 
     const t = await useCookies(cookieHeader, seedpodsJar, {
       tycho(previous?: string[], next?: string[]): string[] {

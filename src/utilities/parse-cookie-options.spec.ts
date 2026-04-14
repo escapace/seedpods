@@ -1,11 +1,12 @@
 import { assert, describe, it } from 'vitest'
 import { SeedpodsError, getSeedpodsErrorCausesByType } from '../error'
 import type { SeedpodsErrorCause } from '../types'
+import { utf8ToBytes } from './bytes'
 import { parseCookieOptions, parseCookieValue } from './parse-cookie-options'
 import { policyFingerprint } from './policy-fingerprint'
 
-const aesKey = Buffer.alloc(32, 1)
-const hmacKey = Buffer.from('hmac-key')
+const aesKey = new Uint8Array(32).fill(1)
+const hmacKey = utf8ToBytes('hmac-key')
 const aesConfiguredKey = { id: 'aes-key', value: aesKey } as const
 const hmacConfiguredKey = { id: 'hmac-key', value: hmacKey } as const
 
@@ -101,15 +102,15 @@ describe('parse-cookie-options', () => {
     assert.deepEqual(
       parseCookieOptions({
         key: 'hmac',
-        keys: [{ id: 'short-hmac', value: Buffer.alloc(1) }],
+        keys: [{ id: 'short-hmac', value: new Uint8Array(1) }],
         type: 'hmac',
       }).keys,
-      [{ id: 'short-hmac', value: Buffer.alloc(1) }],
+      [{ id: 'short-hmac', value: new Uint8Array(1) }],
     )
 
     const error = expectSeedpodsError({
       key: 'aes',
-      keys: [{ id: 'short-aes', value: Buffer.alloc(31) }],
+      keys: [{ id: 'short-aes', value: new Uint8Array(31) }],
       type: 'aes-gcm',
     })
 
@@ -345,7 +346,7 @@ describe('parse-cookie-options', () => {
       key: 'session',
       keys: [
         { id: 'dup', value: hmacKey },
-        { id: 'dup', value: Buffer.from('second-key') },
+        { id: 'dup', value: utf8ToBytes('second-key') },
       ],
       type: 'hmac',
     })
@@ -358,14 +359,14 @@ describe('parse-cookie-options', () => {
 
     const invalidMaterialError = expectSeedpodsError({
       key: 'session',
-      keys: [{ id: 'ok', value: 'not-a-buffer' }],
+      keys: [{ id: 'ok', value: 'not-a-uint8array' }],
       type: 'hmac',
     })
 
     assertHasCause(
       invalidMaterialError,
       'CookieOptionTypeInvalid',
-      (cause) => cause.option === 'keys[0].value' && cause.expected === 'a Buffer',
+      (cause) => cause.option === 'keys[0].value' && cause.expected === 'a Uint8Array',
     )
   })
 

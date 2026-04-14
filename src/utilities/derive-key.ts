@@ -1,4 +1,5 @@
 import type { SeedpodsDeriveKeyOptions } from '../types'
+import { utf8ToBytes } from './bytes'
 
 /**
  * Derives a symmetric key from a secret string.
@@ -13,14 +14,11 @@ import type { SeedpodsDeriveKeyOptions } from '../types'
 export const deriveKey = async (
   secret: string,
   options?: SeedpodsDeriveKeyOptions,
-): Promise<Buffer> => {
-  const passphraseKey = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    'PBKDF2',
-    false,
-    ['deriveKey', 'deriveBits'],
-  )
+): Promise<Uint8Array> => {
+  const passphraseKey = await crypto.subtle.importKey('raw', utf8ToBytes(secret), 'PBKDF2', false, [
+    'deriveKey',
+    'deriveBits',
+  ])
 
   const key = await crypto.subtle.deriveKey(
     {
@@ -29,7 +27,7 @@ export const deriveKey = async (
       name: 'PBKDF2',
       salt:
         typeof options?.salt === 'string'
-          ? Buffer.from(options.salt)
+          ? utf8ToBytes(options.salt)
           : crypto.getRandomValues(new Uint8Array(32)),
     },
     passphraseKey,
@@ -41,7 +39,5 @@ export const deriveKey = async (
     ['encrypt', 'decrypt'],
   )
 
-  const buffer = Buffer.from(await crypto.subtle.exportKey('raw', key))
-
-  return buffer
+  return new Uint8Array(await crypto.subtle.exportKey('raw', key))
 }

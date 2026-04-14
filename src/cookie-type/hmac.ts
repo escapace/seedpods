@@ -1,9 +1,11 @@
+import { SEEDPODS_HMAC_SHA_256_SIGNATURE_LENGTH } from '../constants'
 import type { SeedpodsConfiguredKey } from '../types'
+import { base64UrlToBytesExact, bytesToBase64Url, utf8ToBytes } from '../utilities/bytes'
 import { decodeKid } from '../utilities/decode-kid'
 import { encodeKid } from '../utilities/encode-kid'
 import { timingSafeEqual } from '../utilities/timing-safe-equal'
 
-const sign = async (input: Buffer, keyMaterial: Buffer): Promise<Buffer> => {
+const sign = async (input: Uint8Array, keyMaterial: Uint8Array): Promise<Uint8Array> => {
   const key = await crypto.subtle.importKey(
     'raw',
     keyMaterial,
@@ -12,11 +14,11 @@ const sign = async (input: Buffer, keyMaterial: Buffer): Promise<Buffer> => {
     ['sign', 'verify'],
   )
 
-  return Buffer.from(await crypto.subtle.sign('HMAC', key, input))
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, input))
 }
 
 export const to = async function (
-  buffer: Buffer,
+  buffer: Uint8Array,
   keys: SeedpodsConfiguredKey[],
 ): Promise<string | undefined> {
   if (buffer.length === 0) {
@@ -25,11 +27,11 @@ export const to = async function (
 
   const [key] = keys
   const kid = encodeKid(key.id)
-  const payload = buffer.toString('base64url')
+  const payload = bytesToBase64Url(buffer)
   const input = `${kid}.${payload}`
-  const signature = await sign(Buffer.from(input), key.value)
+  const signature = await sign(utf8ToBytes(input), key.value)
 
-  return `${input}.${signature.toString('base64url')}`
+  return `${input}.${bytesToBase64Url(signature)}`
 }
 
 export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) => {
@@ -39,7 +41,11 @@ export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) =
     return
   }
 
-  const [kidSegment, payloadSegment] = split
+  const [kidSegment, payloadSegment, signatureSegment] = split
+
+  if (payloadSegment.length === 0 || signatureSegment.length === 0) {
+    return
+  }
   const id = decodeKid(kidSegment)
 
   if (id === undefined) {
@@ -53,21 +59,25 @@ export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) =
   }
 
   const selected = keys[index]
-  const value = Buffer.from(payloadSegment, 'base64url')
-  const expectedInput = await to(value, [selected])
+  const value = base64UrlToBytesExact(payloadSegment)
+  const signature = base64UrlToBytesExact(signatureSegment)
 
-  if (expectedInput === undefined) {
+  if (value === undefined || signature === undefined || value.length === 0) {
     return
   }
 
-  const expectedBuffer = Buffer.from(expectedInput)
-  const inputBuffer = Buffer.from(cookieValue)
-
-  if (expectedBuffer.length !== inputBuffer.length) {
+  if (signature.length !== SEEDPODS_HMAC_SHA_256_SIGNATURE_LENGTH) {
     return
   }
 
-  if (!timingSafeEqual(expectedBuffer, inputBuffer)) {
+  const input = utf8ToBytes(`${kidSegment}.${payloadSegment}`)
+  const expectedSignature = await sign(input, selected.value)
+
+  if (expectedSignature.length !== signature.length) {
+    return
+  }
+
+  if (!timingSafeEqual(expectedSignature, signature)) {
     return
   }
 

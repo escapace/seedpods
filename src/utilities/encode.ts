@@ -1,12 +1,13 @@
 import { canonicalize } from '@escapace/canonicalize'
 import type { SeedpodsCookieValue, SeedpodsParsedCookieOptions } from '../types'
+import { utf8ToBytes } from './bytes'
 
 export const encode = (
   // eslint-disable-next-line typescript/no-explicit-any
   value: any,
   options: SeedpodsParsedCookieOptions,
   policy: string,
-): Buffer | undefined => {
+): Uint8Array | undefined => {
   if (value === undefined) {
     return
   }
@@ -24,5 +25,5 @@ export const encode = (
     value,
   }
 
-  return Buffer.from(canonicalize(payload)!)
+  return utf8ToBytes(canonicalize(payload)!)
 }

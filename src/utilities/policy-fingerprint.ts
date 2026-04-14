@@ -1,5 +1,6 @@
 import { canonicalize } from '@escapace/canonicalize'
 import type { SeedpodsParsedCookieOptions } from '../types'
+import { bytesToBase64Url, utf8ToBytes } from './bytes'
 
 type SeedpodsCookiePolicyOptions = Pick<
   SeedpodsParsedCookieOptions,
@@ -15,9 +16,9 @@ export const policyFingerprint = async (options: SeedpodsCookiePolicyOptions): P
     ...(options.secure === true ? { secure: true } : {}),
   }
 
-  const digest = Buffer.from(
-    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalize(normalized))),
+  const digest = new Uint8Array(
+    await crypto.subtle.digest('SHA-256', utf8ToBytes(canonicalize(normalized)!)),
   )
 
-  return digest.toString('base64url')
+  return bytesToBase64Url(digest)
 }

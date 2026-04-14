@@ -1,9 +1,14 @@
+import {
+  SEEDPODS_AES_GCM_AUTHENTICATION_TAG_LENGTH,
+  SEEDPODS_AES_GCM_IV_LENGTH,
+} from '../constants'
 import type { SeedpodsConfiguredKey } from '../types'
+import { base64UrlToBytesExact, bytesToBase64Url, utf8ToBytes } from '../utilities/bytes'
 import { decodeKid } from '../utilities/decode-kid'
 import { encodeKid } from '../utilities/encode-kid'
 
 export const to = async (
-  buffer: Buffer,
+  buffer: Uint8Array,
   keys: SeedpodsConfiguredKey[],
 ): Promise<string | undefined> => {
   if (buffer.length === 0) {
@@ -18,16 +23,16 @@ export const to = async (
   ])
 
   // https://developer.mozilla.org/en-US/docs/Web/API/AesGcmParams
-  const iv = Buffer.from(crypto.getRandomValues(new Uint8Array(12)))
-  const cipher = Buffer.from(
+  const iv = crypto.getRandomValues(new Uint8Array(SEEDPODS_AES_GCM_IV_LENGTH))
+  const cipher = new Uint8Array(
     await crypto.subtle.encrypt(
-      { additionalData: Buffer.from(kid), iv, name: 'AES-GCM' },
+      { additionalData: utf8ToBytes(kid), iv, name: 'AES-GCM' },
       key,
       buffer,
     ),
   )
 
-  return `${kid}.${cipher.toString('base64url')}.${iv.toString('base64url')}`
+  return `${kid}.${bytesToBase64Url(cipher)}.${bytesToBase64Url(iv)}`
 }
 
 export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) => {
@@ -38,6 +43,10 @@ export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) =
   }
 
   const [kidSegment, ciperB64, ivB64] = split
+
+  if (ciperB64.length === 0 || ivB64.length === 0) {
+    return
+  }
   const id = decodeKid(kidSegment)
 
   if (id === undefined) {
@@ -51,8 +60,20 @@ export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) =
   }
 
   const selected = keys[index]
-  const cipher = Buffer.from(ciperB64, 'base64url')
-  const iv = Buffer.from(ivB64, 'base64url')
+  const cipher = base64UrlToBytesExact(ciperB64)
+  const iv = base64UrlToBytesExact(ivB64)
+
+  if (
+    cipher === undefined ||
+    iv === undefined ||
+    cipher.length < SEEDPODS_AES_GCM_AUTHENTICATION_TAG_LENGTH
+  ) {
+    return
+  }
+
+  if (iv.length !== SEEDPODS_AES_GCM_IV_LENGTH) {
+    return
+  }
 
   const key = await crypto.subtle.importKey('raw', selected.value, 'AES-GCM', false, [
     'encrypt',
@@ -60,9 +81,9 @@ export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) =
   ])
 
   try {
-    const value = Buffer.from(
+    const value = new Uint8Array(
       await crypto.subtle.decrypt(
-        { additionalData: Buffer.from(kidSegment), iv, name: 'AES-GCM' },
+        { additionalData: utf8ToBytes(kidSegment), iv, name: 'AES-GCM' },
         key,
         cipher,
       ),
