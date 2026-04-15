@@ -350,7 +350,7 @@ A cookie interface for reading values, recording changes, and generating changed
 
 The returned interface reads configured cookie values through `get`, records changes through `set`, `del`, and `refresh`, and produces changed `Set-Cookie` header values through `entries` and `values`. If the header contains the same cookie name more than once, the function keeps the best decodable value for each configured cookie.
 
-## function deriveKey [↗](src/utilities/derive-key.ts#L20-L49 'deriveKey')
+## function deriveKey [↗](src/utilities/derive-key.ts#L20-L55 'deriveKey')
 
 Derives a symmetric key from a secret string.
 

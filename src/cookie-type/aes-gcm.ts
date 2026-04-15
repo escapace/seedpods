@@ -17,10 +17,7 @@ export const to = async (
 
   const [selected] = keys
   const kid = encodeKid(selected.id)
-  const key = await crypto.subtle.importKey('raw', selected.value, 'AES-GCM', false, [
-    'encrypt',
-    'decrypt',
-  ])
+  const key = await crypto.subtle.importKey('raw', selected.value, 'AES-GCM', false, ['encrypt'])
 
   // https://developer.mozilla.org/en-US/docs/Web/API/AesGcmParams
   const iv = crypto.getRandomValues(new Uint8Array(SEEDPODS_AES_GCM_IV_LENGTH))
@@ -75,15 +72,12 @@ export const from = async (cookieValue: string, keys: SeedpodsConfiguredKey[]) =
     return
   }
 
-  const key = await crypto.subtle.importKey('raw', selected.value, 'AES-GCM', false, [
-    'encrypt',
-    'decrypt',
-  ])
+  const key = await crypto.subtle.importKey('raw', selected.value, 'AES-GCM', false, ['decrypt'])
 
   try {
     const value = new Uint8Array(
       await crypto.subtle.decrypt(
-        { additionalData: utf8ToBytes(kidSegment), iv, name: 'AES-GCM' },
+        { additionalData: utf8ToBytes(kidSegment), iv, name: 'AES-GCM', tagLength: 128 },
         key,
         cipher,
       ),

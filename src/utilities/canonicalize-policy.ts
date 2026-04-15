@@ -15,5 +15,11 @@ export const canonicalizePolicy = (options: SeedpodsCookiePolicyOptions): string
     ...(options.secure === true ? { secure: true } : {}),
   }
 
-  return canonicalize(normalized)!
+  const canonical = canonicalize(normalized)
+
+  if (canonical === undefined) {
+    throw new TypeError('canonicalize returned undefined for a known-serializable policy object')
+  }
+
+  return canonical
 }

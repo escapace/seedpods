@@ -25,6 +25,10 @@ export const encode = (
     value,
   }
 
+  // canonicalize returns undefined only for non-serializable top-level values (e.g. bare
+  // functions or Symbols). payload is always a plain SeedpodsCookieValue object, so this
+  // branch is unreachable through normal usage; the guard keeps the code safe if the
+  // upstream library's behavior ever changes.
   const canonical = canonicalize(payload)
 
   if (canonical === undefined) {

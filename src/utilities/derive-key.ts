@@ -21,6 +21,12 @@ export const deriveKey = async (
   secret: string,
   options?: SeedpodsDeriveKeyOptions,
 ): Promise<Uint8Array> => {
+  const iterations = options?.iterations ?? 600_000
+
+  if (!Number.isInteger(iterations) || iterations < 1) {
+    throw new RangeError('iterations must be a positive integer')
+  }
+
   const passphraseKey = await crypto.subtle.importKey('raw', utf8ToBytes(secret), 'PBKDF2', false, [
     'deriveKey',
     'deriveBits',
@@ -29,7 +35,7 @@ export const deriveKey = async (
   const key = await crypto.subtle.deriveKey(
     {
       hash: 'SHA-512',
-      iterations: options?.iterations ?? 600_000,
+      iterations,
       name: 'PBKDF2',
       salt:
         typeof options?.salt === 'string'
