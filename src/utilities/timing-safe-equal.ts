@@ -1,6 +1,6 @@
 export function timingSafeEqual(a: Uint8Array, b: Uint8Array) {
   if (a.length !== b.length) {
-    throw new TypeError('Input buffers must have the same length')
+    return false
   }
 
   const length = a.length

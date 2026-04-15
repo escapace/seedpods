@@ -19,6 +19,8 @@ describe('validate-cookie-value', () => {
       '"',
       '1fWa\u0005',
       '1f\u0091Wa',
+      // U+0080 is the first non-ASCII code point; must be rejected per RFC 6265
+      '1f\u0080Wa',
     ]
 
     assert.isEmpty(tokens.filter((value) => validateCookieValue(value)))

@@ -25,7 +25,7 @@ export function validateCookieValue(value: string): boolean {
       return false
     }
 
-    if (c > String.fromCharCode(0x80)) {
+    if (c >= String.fromCharCode(0x80)) {
       return false
     }
   }

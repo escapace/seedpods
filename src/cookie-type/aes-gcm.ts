@@ -26,7 +26,7 @@ export const to = async (
   const iv = crypto.getRandomValues(new Uint8Array(SEEDPODS_AES_GCM_IV_LENGTH))
   const cipher = new Uint8Array(
     await crypto.subtle.encrypt(
-      { additionalData: utf8ToBytes(kid), iv, name: 'AES-GCM' },
+      { additionalData: utf8ToBytes(kid), iv, name: 'AES-GCM', tagLength: 128 },
       key,
       buffer,
     ),

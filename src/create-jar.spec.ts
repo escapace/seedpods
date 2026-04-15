@@ -3,10 +3,9 @@ import { createCookie } from './create-cookie'
 import { createJar } from './create-jar'
 import { useCookies } from './use-cookies'
 import type { SeedpodsCookie, SeedpodsCookies } from './types'
-import { utf8ToBytes } from './utilities/bytes'
 
 const aesKey = new Uint8Array(32).fill(1)
-const hmacKey = utf8ToBytes('hmac-key')
+const hmacKey = new Uint8Array(32).fill(2)
 const aesConfiguredKey = { id: 'aes-key', value: aesKey } as const
 const hmacConfiguredKey = { id: 'hmac-key', value: hmacKey } as const
 

@@ -11,7 +11,7 @@ const sign = async (input: Uint8Array, keyMaterial: Uint8Array): Promise<Uint8Ar
     keyMaterial,
     { hash: 'SHA-256', name: 'HMAC' },
     false,
-    ['sign', 'verify'],
+    ['sign'],
   )
 
   return new Uint8Array(await crypto.subtle.sign('HMAC', key, input))

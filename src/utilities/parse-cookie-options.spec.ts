@@ -6,7 +6,7 @@ import { parseCookieOptions, parseCookieValue } from './parse-cookie-options'
 import { canonicalizePolicy } from './canonicalize-policy'
 
 const aesKey = new Uint8Array(32).fill(1)
-const hmacKey = utf8ToBytes('hmac-key')
+const hmacKey = new Uint8Array(32).fill(2)
 const aesConfiguredKey = { id: 'aes-key', value: aesKey } as const
 const hmacConfiguredKey = { id: 'hmac-key', value: hmacKey } as const
 
@@ -98,24 +98,48 @@ describe('parse-cookie-options', () => {
     )
   })
 
-  it('accepts hmac keys of any byte length but requires 32-byte aes-gcm keys', () => {
+  it('requires hmac keys to be at least 32 bytes and aes-gcm keys to be exactly 32 bytes', () => {
+    const errorShortHmac = expectSeedpodsError({
+      key: 'hmac',
+      keys: [{ id: 'short-hmac', value: new Uint8Array(31) }],
+      type: 'hmac',
+    })
+
+    assertHasCause(
+      errorShortHmac,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'keys[0].value' && cause.reason.includes('32 bytes'),
+    )
+
     assert.deepEqual(
       parseCookieOptions({
         key: 'hmac',
-        keys: [{ id: 'short-hmac', value: new Uint8Array(1) }],
+        keys: [{ id: 'exact-hmac', value: new Uint8Array(32) }],
         type: 'hmac',
       }).keys,
-      [{ id: 'short-hmac', value: new Uint8Array(1) }],
+      [{ id: 'exact-hmac', value: new Uint8Array(32) }],
     )
 
-    const error = expectSeedpodsError({
+    const errorShortAes = expectSeedpodsError({
       key: 'aes',
       keys: [{ id: 'short-aes', value: new Uint8Array(31) }],
       type: 'aes-gcm',
     })
 
     assertHasCause(
-      error,
+      errorShortAes,
+      'CookieOptionValueInvalid',
+      (cause) => cause.option === 'keys[0].value' && cause.reason.includes('32 bytes'),
+    )
+
+    const errorLongAes = expectSeedpodsError({
+      key: 'aes',
+      keys: [{ id: 'long-aes', value: new Uint8Array(33) }],
+      type: 'aes-gcm',
+    })
+
+    assertHasCause(
+      errorLongAes,
       'CookieOptionValueInvalid',
       (cause) => cause.option === 'keys[0].value' && cause.reason.includes('32 bytes'),
     )

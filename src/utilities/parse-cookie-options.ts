@@ -399,6 +399,15 @@ function validateCookieKeys(
       continue
     }
 
+    if (cookieType === 'hmac' && entry.value.byteLength < 32) {
+      causes.push({
+        option: valueOption,
+        reason: 'must be at least 32 bytes (256 bits)',
+        type: 'CookieOptionValueInvalid',
+      })
+      continue
+    }
+
     ids.add(entry.id)
     result.push({ id: entry.id, value: entry.value })
   }

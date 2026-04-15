@@ -5,7 +5,13 @@ import { utf8ToBytes } from './bytes'
  * Derives a symmetric key from a secret string.
  *
  * @remarks
- * The function uses Password-Based Key Derivation Function 2 with SHA-512 and returns raw key bytes. Pass a fixed salt when the same secret must produce the same key across processes or deployments. When no salt is provided, a random salt is generated and the derived key changes between calls.
+ * The function uses Password-Based Key Derivation Function 2 with SHA-512 and returns raw key bytes.
+ * Pass a fixed salt when the same secret must produce the same key across processes or deployments.
+ * When no salt is provided, a random salt is generated and the derived key changes between calls.
+ *
+ * The returned bytes are algorithm-agnostic. The WebCrypto API requires an algorithm label during
+ * derivation; internally the function uses `AES-GCM` as that label, but the exported raw bytes are
+ * suitable for both `aes-gcm` and `hmac` cookie types.
  *
  * @param secret - Secret input used as the derivation source.
  * @param options - Optional derivation parameters, including salt and iteration count.

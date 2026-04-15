@@ -350,7 +350,7 @@ A cookie interface for reading values, recording changes, and generating changed
 
 The returned interface reads configured cookie values through `get`, records changes through `set`, `del`, and `refresh`, and produces changed `Set-Cookie` header values through `entries` and `values`. If the header contains the same cookie name more than once, the function keeps the best decodable value for each configured cookie.
 
-## function deriveKey [↗](src/utilities/derive-key.ts#L14-L43 'deriveKey')
+## function deriveKey [↗](src/utilities/derive-key.ts#L20-L49 'deriveKey')
 
 Derives a symmetric key from a secret string.
 
@@ -372,6 +372,8 @@ The derived key bytes.
 ### Remarks
 
 The function uses Password-Based Key Derivation Function 2 with SHA-512 and returns raw key bytes. Pass a fixed salt when the same secret must produce the same key across processes or deployments. When no salt is provided, a random salt is generated and the derived key changes between calls.
+
+The returned bytes are algorithm-agnostic. The WebCrypto API requires an algorithm label during derivation; internally the function uses `AES-GCM` as that label, but the exported raw bytes are suitable for both `aes-gcm` and `hmac` cookie types.
 
 ## function parseCookieHeader [↗](src/utilities/parse-cookie-header.ts#L17-L65 'parseCookieHeader')
 

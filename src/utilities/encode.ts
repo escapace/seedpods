@@ -25,5 +25,11 @@ export const encode = (
     value,
   }
 
-  return utf8ToBytes(canonicalize(payload)!)
+  const canonical = canonicalize(payload)
+
+  if (canonical === undefined) {
+    return
+  }
+
+  return utf8ToBytes(canonical)
 }
