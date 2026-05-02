@@ -316,13 +316,13 @@ The update is committed before the function returns. Later requests observe the 
 
 Scope follows the cookie object returned by [createCookie](#function-createcookie-). When the same cookie object is reused across multiple jars, one call updates all jars that reference it. When validation fails, the function throws and leaves the previous runtime unchanged.
 
-## function useCookies [↗](src/use-cookies.ts#L114-L255 'useCookies')
+## function useCookies [↗](src/use-cookies.ts#L115-L259 'useCookies')
 
-Creates a cookie interface from a `Cookie` header value and a cookie jar.
+Creates a cookie interface from a `Cookie` header value or parsed cookie map and a cookie jar.
 
 ```typescript
 useCookies: <SeedpodsJar extends SeedpodsJarInterface>(
-  cookieHeader: SeedpodsCookieHeader | undefined,
+  cookieHeader: SeedpodsCookieHeader,
   jar: SeedpodsJar,
   reducers?: SeedpodsCookiesReducers<SeedpodsJar>,
 ) => Promise<SeedpodsCookies<SeedpodsJar>>
@@ -336,11 +336,11 @@ useCookies: <SeedpodsJar extends SeedpodsJarInterface>(
 
 ### Parameters
 
-| Parameter      | Type                                                                                                              | Description                                                                                  |
-| -------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `cookieHeader` | <pre>[SeedpodsCookieHeader](#type-seedpodscookieheader- 'type SeedpodsCookieHeader') \| undefined</pre>           | Incoming `Cookie` header value. When omitted, the interface starts with no received cookies. |
-| `jar`          | <pre>SeedpodsJar</pre>                                                                                            | Cookie definitions created with [createJar](#function-createjar-).                           |
-| `reducers`     | <pre>[SeedpodsCookiesReducers](#type-seedpodscookiesreducers- 'type SeedpodsCookiesReducers')\<SeedpodsJar></pre> | Optional reducers that combine the current cookie value with a later value passed to `set`.  |
+| Parameter      | Type                                                                                                              | Description                                                                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cookieHeader` | <pre>[SeedpodsCookieHeader](#type-seedpodscookieheader- 'type SeedpodsCookieHeader')</pre>                        | Incoming `Cookie` header value or map returned by [parseCookieHeader](#function-parsecookieheader-). When omitted, the interface starts with no received cookies. |
+| `jar`          | <pre>SeedpodsJar</pre>                                                                                            | Cookie definitions created with [createJar](#function-createjar-).                                                                                                |
+| `reducers`     | <pre>[SeedpodsCookiesReducers](#type-seedpodscookiesreducers- 'type SeedpodsCookiesReducers')\<SeedpodsJar></pre> | Optional reducers that combine the current cookie value with a later value passed to `set`.                                                                       |
 
 ### Returns
 
@@ -579,7 +579,7 @@ Whether the cookie requires a secure transport.
 secure?: boolean;
 ```
 
-## interface SeedpodsCookies [↗](src/types.ts#L495-L533 'SeedpodsCookies')
+## interface SeedpodsCookies [↗](src/types.ts#L506-L544 'SeedpodsCookies')
 
 Mutable cookie interface returned by [useCookies](#function-usecookies-).
 
@@ -651,7 +651,7 @@ Returns changed `Set-Cookie` header values.
 values: () => Promise<string[]>
 ```
 
-## interface SeedpodsDeriveKeyOptions [↗](src/types.ts#L538-L556 'SeedpodsDeriveKeyOptions')
+## interface SeedpodsDeriveKeyOptions [↗](src/types.ts#L549-L567 'SeedpodsDeriveKeyOptions')
 
 Options for [deriveKey](#function-derivekey-).
 
@@ -809,13 +809,17 @@ Signing mode.
 type: 'hmac'
 ```
 
-## type SeedpodsCookieHeader [↗](src/types.ts#L464 'SeedpodsCookieHeader')
+## type SeedpodsCookieHeader [↗](src/types.ts#L475 'SeedpodsCookieHeader')
 
-Raw `Cookie` header value accepted by [useCookies](#function-usecookies-).
+`Cookie` header input accepted by [useCookies](#function-usecookies-).
 
 ```typescript
-export type SeedpodsCookieHeader = string | undefined
+export type SeedpodsCookieHeader = string | SeedpodsParsedCookieHeader | undefined
 ```
+
+### Remarks
+
+Pass a string to let seedpods parse the header, pass a parsed map to filter or otherwise adjust cookie values before opening a jar, or pass `undefined` to start with no received cookies.
 
 ## type SeedpodsCookieOptions [↗](src/types.ts#L177-L179 'SeedpodsCookieOptions')
 
@@ -853,7 +857,7 @@ Supported `SameSite` attribute values for cookie definitions.
 export type SeedpodsCookieSameSite = (typeof SEEDPODS_COOKIE_SAME_SITE_VALUES)[number]
 ```
 
-## type SeedpodsCookiesReducer [↗](src/types.ts#L471-L474 'SeedpodsCookiesReducer')
+## type SeedpodsCookiesReducer [↗](src/types.ts#L482-L485 'SeedpodsCookiesReducer')
 
 Reducer used to combine the current and next value for one cookie key.
 
@@ -870,7 +874,7 @@ export type SeedpodsCookiesReducer<SeedpodsValue> = (
 | --------------- | ------------------ |
 | `SeedpodsValue` | Cookie value type. |
 
-## type SeedpodsCookiesReducers [↗](src/types.ts#L481-L485 'SeedpodsCookiesReducers')
+## type SeedpodsCookiesReducers [↗](src/types.ts#L492-L496 'SeedpodsCookiesReducers')
 
 Reducer map accepted by [useCookies](#function-usecookies-).
 
@@ -924,3 +928,15 @@ Supported [SeedpodsError](#class-seedpodserror-) cause types.
 ```typescript
 export type SeedpodsErrorType = (typeof SEEDPODS_ERROR_TYPES)[number]
 ```
+
+## type SeedpodsParsedCookieHeader [↗](src/types.ts#L467 'SeedpodsParsedCookieHeader')
+
+Parsed `Cookie` header value accepted by [useCookies](#function-usecookies-).
+
+```typescript
+export type SeedpodsParsedCookieHeader = ReadonlyMap<string, readonly string[]>
+```
+
+### Remarks
+
+This is the return shape of [parseCookieHeader](#function-parsecookieheader-). Each map key is a cookie name, and each value preserves all received values for that name in encounter order.

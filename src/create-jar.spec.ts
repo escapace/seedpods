@@ -36,8 +36,15 @@ const emptySeedpodsJar = createJar()
 describe('createJar type level', () => {
   it('propagates cookie keys and values through useCookies', async () => {
     const cookies = await useCookies('', combinedSeedpodsJar)
+    const cookiesFromParsedHeader = await useCookies(
+      new Map<string, string[]>(),
+      combinedSeedpodsJar,
+    )
 
     expectTypeOf(cookies).toEqualTypeOf<SeedpodsCookies<typeof combinedSeedpodsJar>>()
+    expectTypeOf(cookiesFromParsedHeader).toEqualTypeOf<
+      SeedpodsCookies<typeof combinedSeedpodsJar>
+    >()
     expectTypeOf(cookies.get('session')).toEqualTypeOf<number | undefined>()
     expectTypeOf(cookies.get('profile')).toEqualTypeOf<{ name: string } | undefined>()
     expectTypeOf(cookies.get('flags')).toEqualTypeOf<string[] | undefined>()

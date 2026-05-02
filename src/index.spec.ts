@@ -12,6 +12,7 @@ import { encode } from './utilities/encode'
 import { encodeKid } from './utilities/encode-kid'
 import { canonicalizePolicy } from './utilities/canonicalize-policy'
 import { fingerprintPolicy } from './utilities/fingerprint-policy'
+import { parseCookieHeader } from './utilities/parse-cookie-header'
 
 const keyA = await deriveKey('key-a', { iterations: 1 })
 const keyB = await deriveKey('key-b', { iterations: 1 })
@@ -237,6 +238,24 @@ describe('useCookies', () => {
       'set',
       'values',
     ])
+  })
+
+  it('accepts a parsed cookie header map so callers can filter cookies', async () => {
+    const validValue = await toHmac(
+      (await encodeWithPolicy(100, currentOptions(dazzle)))!,
+      currentOptions(dazzle).keys,
+    )
+    const parsedCookieHeader = parseCookieHeader(`dazzle=${validValue!}; unrelated=value`)
+    let cookies = await useCookies(parsedCookieHeader, childSeedpodsJar)
+
+    assert.equal(cookies.get('dazzle'), 100)
+    assert.deepEqual(await cookies.values(), [])
+
+    parsedCookieHeader.delete('dazzle')
+    cookies = await useCookies(parsedCookieHeader, childSeedpodsJar)
+
+    assert.equal(cookies.get('dazzle'), undefined)
+    assert.deepEqual(await cookies.values(), [])
   })
 
   it('does not throw on malformed hmac cookie values and expires them', async () => {

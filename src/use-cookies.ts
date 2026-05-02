@@ -9,6 +9,7 @@ import type {
   SeedpodsCookie,
   SeedpodsCookieHeader,
   SeedpodsCookiePublishedSnapshot,
+  SeedpodsParsedCookieHeader,
   SeedpodsCookies,
   SeedpodsCookiesReducers,
   SeedpodsCookieState,
@@ -100,24 +101,27 @@ const getCookieContext = (
 }
 
 /**
- * Creates a cookie interface from a `Cookie` header value and a cookie jar.
+ * Creates a cookie interface from a `Cookie` header value or parsed cookie map and a cookie jar.
  *
  * @remarks
  * The returned interface reads configured cookie values through `get`, records changes through `set`, `del`, and `refresh`, and produces changed `Set-Cookie` header values through `entries` and `values`. If the header contains the same cookie name more than once, the function keeps the best decodable value for each configured cookie.
  *
  * @typeParam SeedpodsJar - Jar type that defines the available cookie keys and value types.
- * @param cookieHeader - Incoming `Cookie` header value. When omitted, the interface starts with no received cookies.
+ * @param cookieHeader - Incoming `Cookie` header value or map returned by {@link parseCookieHeader}. When omitted, the interface starts with no received cookies.
  * @param jar - Cookie definitions created with {@link createJar}.
  * @param reducers - Optional reducers that combine the current cookie value with a later value passed to `set`.
  * @returns A cookie interface for reading values, recording changes, and generating changed `Set-Cookie` header values.
  */
 export const useCookies = async <SeedpodsJar extends SeedpodsJarInterface>(
-  cookieHeader: SeedpodsCookieHeader | undefined,
+  cookieHeader: SeedpodsCookieHeader,
   jar: SeedpodsJar,
   reducers: SeedpodsCookiesReducers<SeedpodsJar> = {},
 ): Promise<SeedpodsCookies<SeedpodsJar>> => {
   const cookies = jar[SEEDPODS_SYMBOL_JAR].state.cookies
-  const parsedCookieHeader = parseCookieHeader(cookieHeader)
+  const parsedCookieHeader: SeedpodsParsedCookieHeader =
+    typeof cookieHeader === 'string' || cookieHeader === undefined
+      ? parseCookieHeader(cookieHeader)
+      : cookieHeader
 
   const cookieEntries = Object.entries(cookies) as Array<
     [string, SeedpodsCookie<string, SeedpodsCookieType, unknown>]

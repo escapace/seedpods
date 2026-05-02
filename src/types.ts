@@ -459,9 +459,20 @@ export interface SeedpodsJar<State extends SeedpodsJarState> extends SeedpodsJar
 }
 
 /**
- * Raw `Cookie` header value accepted by {@link useCookies}.
+ * Parsed `Cookie` header value accepted by {@link useCookies}.
+ *
+ * @remarks
+ * This is the return shape of {@link parseCookieHeader}. Each map key is a cookie name, and each value preserves all received values for that name in encounter order.
  */
-export type SeedpodsCookieHeader = string | undefined
+export type SeedpodsParsedCookieHeader = ReadonlyMap<string, readonly string[]>
+
+/**
+ * `Cookie` header input accepted by {@link useCookies}.
+ *
+ * @remarks
+ * Pass a string to let seedpods parse the header, pass a parsed map to filter or otherwise adjust cookie values before opening a jar, or pass `undefined` to start with no received cookies.
+ */
+export type SeedpodsCookieHeader = string | SeedpodsParsedCookieHeader | undefined
 
 /**
  * Reducer used to combine the current and next value for one cookie key.

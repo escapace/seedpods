@@ -65,6 +65,7 @@ export type {
   SeedpodsJarState,
   SeedpodsJarStateAfterAction,
   SeedpodsMergedJarCookies,
+  SeedpodsParsedCookieHeader,
   SeedpodsParsedCookieOptions,
   SeedpodsParsedCookieOptionsBase,
   SeedpodsParsedCookieOptionsForType,
