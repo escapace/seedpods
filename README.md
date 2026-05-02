@@ -375,7 +375,7 @@ The function uses Password-Based Key Derivation Function 2 with SHA-512 and retu
 
 The returned bytes are algorithm-agnostic. The WebCrypto API requires an algorithm label during derivation; internally the function uses `AES-GCM` as that label, but the exported raw bytes are suitable for both `aes-gcm` and `hmac` cookie types.
 
-## function parseCookieHeader [↗](src/utilities/parse-cookie-header.ts#L17-L65 'parseCookieHeader')
+## function parseCookieHeader [↗](src/utilities/parse-cookie-header.ts#L17-L60 'parseCookieHeader')
 
 Parses a `Cookie` header value into a map of cookie names and values.
 
@@ -395,7 +395,7 @@ A map from each cookie name to all received values for that name.
 
 ### Remarks
 
-Repeated cookie names are preserved in encounter order. Surrounding double quotes are stripped from quoted values. Fragments without an equals sign are ignored. When the input is `undefined`, the function returns an empty map.
+Repeated cookie names are preserved in encounter order. Quoted cookie values keep their surrounding double quotes because rfc6265bis treats them as part of the cookie-value. Fragments without an equals sign are ignored. When the input is `undefined`, the function returns an empty map.
 
 ## class SeedpodsError [↗](src/error.ts#L44-L53 'SeedpodsError')
 

@@ -18,7 +18,7 @@ describe('parse-cookie-header', () => {
   it('should parse cookie string to object', () => {
     assert.deepEqual(parse('foo=bar'), { foo: ['bar'] })
     assert.deepEqual(parse('foo=123'), { foo: ['123'] })
-    assert.deepEqual(parse('foo="123"'), { foo: ['123'] })
+    assert.deepEqual(parse('foo="123"'), { foo: ['"123"'] })
   })
 
   it('should ignore OWS', () => {
@@ -30,6 +30,11 @@ describe('parse-cookie-header', () => {
 
   it('should parse cookie with empty value', () => {
     assert.deepEqual(parse('foo= ; bar='), { bar: [''], foo: [''] })
+  })
+
+  it('should preserve quotes because they are part of cookie values', () => {
+    assert.deepEqual(parse('foo=""; bar=baz'), { bar: ['baz'], foo: ['""'] })
+    assert.deepEqual(parse('foo="a=b"'), { foo: ['"a=b"'] })
   })
 
   it('should ignore cookies without value', () => {
