@@ -12,7 +12,7 @@
   "bugs": "https://github.com/escapace/seedpods/issues",
   "dependencies": {
     "@escapace/canonicalize": "^1.1.0",
-    "@escapace/reconcile": "^0.1.0",
+    "@escapace/reconcile": "^0.2.0",
     "fast-equals": "^6.0.0",
     "secure-json-parse": "^4.1.0"
   },
