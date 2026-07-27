@@ -16,7 +16,7 @@ importers:
         version: 0.2.0(coastal@0.4.0)(es-toolkit@1.49.0)
       fast-equals:
         specifier: ^6.0.1
-        version: 6.0.1
+        version: 6.0.2
       secure-json-parse:
         specifier: ^4.1.0
         version: 4.1.0
@@ -1856,8 +1856,8 @@ packages:
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
-  fast-equals@6.0.1:
-    resolution: {integrity: sha512-BWprZxDrKRQhcwmIpqmf7oFwLyrinEaN1ir50m+QXujAx96C1jBgBM8dRft05Q3MXhByeIEIgXBYuGputgM9pA==}
+  fast-equals@6.0.2:
+    resolution: {integrity: sha512-sAjhj9ZhOxYCGiNMnZLaucOqf5ZeFnHNoKoAZiD9thhJ0N8RP85qJK759/97C/3L7NzzmGVB5uiX9AUpySZmUQ==}
     engines: {node: '>=6.0.0'}
 
   fast-fifo@1.3.2:
@@ -4937,7 +4937,7 @@ snapshots:
 
   fast-deep-equal@3.1.3: {}
 
-  fast-equals@6.0.1: {}
+  fast-equals@6.0.2: {}
 
   fast-fifo@1.3.2: {}
 
